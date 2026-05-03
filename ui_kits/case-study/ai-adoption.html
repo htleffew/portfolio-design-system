@@ -1344,7 +1344,7 @@ const onScroll = () => {
   }
   const active = sections[activeIdx];
   const mode = [...active.classList].find(c => c.startsWith('band--'));
-  const isPaper = mode === 'band--paper';
+  const isPaper = mode !== 'band--paper';
 
   statusSec.textContent = active.dataset.section;
   spineRows.forEach((row, i) => {
@@ -1528,6 +1528,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
+
 
 
 
