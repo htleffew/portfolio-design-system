@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entity resolution at Spokeo: measuring before rebuilding. Dr. Heather Leffew</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS, dual mode, no radii, sharp editorial
+   ============================================================ */
+:root {
+  /* Mineral neutrals (dark register) */
+  --obsidian:#030303;
+  --charcoal:#161616;
+  --graphite:#222222;
+  --brushed:#333333;
+  --tungsten:#A1A1A6;
+  --platinum:#F5F5F7;
+  --flare:#FFFFFF;
+
+  /* Paper neutrals, perfect inversion of the dark register.
+     Paper base = platinum (#F5F5F7). Ink base = obsidian (#030303).
+     Tints are the literal channel-flips of charcoal/graphite/tungsten. */
+  --paper:#F5F5F7;          /* base reading surface  <- inverse of obsidian */
+  --paper-2:#E9E9E9;        /* raised surface        <- inverse of charcoal */
+  --paper-3:#DDDDDD;        /* hairline              <- inverse of graphite */
+  --ink:#030303;            /* primary ink           <- obsidian */
+  --ink-2:#222222;           /* secondary ink         <- graphite */
+  --ink-3:#5E5E5A;          /* meta ink              <- inverse of tungsten */
+
+  /* Brand accents */
+  --sapphire-deep:#0F52BA;
+  --sapphire:#4D8CFF;
+  --ink-blue:#1A3A6B;       /* sapphire's light-mode counterpart */
+  /* Case-study figure palette, "Oil paint quartet".
+     Real pigment names. Glazed flavor (no lift), except Hansa
+     which is always lifted. Monochrome / sequential scales
+     restrict to Phthalo Blue only. */
+  --phthalo:#0F3A6B;        /* Phthalo Blue, primary categorical */
+  --phthalo-lift:#3866A0;   /* Phthalo Blue, lifted, monochrome scale only */
+  --alizarin:#7A1626;       /* Alizarin Crimson */
+  --hookers:#1A4A38;        /* Hooker's Green */
+  --hansa:#DBA844;          /* Hansa Yellow Light, always lifted */
+  --dioxazine:#3D1F4A;      /* Dioxazine Purple, reserve fifth */
+
+  /* Type */
+  --display:'Playfair Display','Times New Roman',serif;
+  --body:'Lora',Georgia,serif;
+  --mono:'JetBrains Mono','SF Mono',Menlo,monospace;
+
+  /* Motion */
+  --ease-out:cubic-bezier(0.16,1,0.3,1);
+  --ease-std:cubic-bezier(0.4,0,0.2,1);
+
+  /* Reading column */
+  --col:680px;
+  --col-wide:1080px;
+}
+
+/* No radii. Anywhere. */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; border-radius:0 !important; }
+
+::selection { background:rgba(77,140,255,0.35); color:#fff; }
+
+html { scroll-behavior:smooth; }
+body {
+  font-family:var(--body);
+  background:var(--obsidian);
+  color:var(--platinum);
+  font-size:18px;
+  line-height:1.78;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Fixed atmosphere, switches with mode */
+.atmosphere {
+  position:fixed; inset:0; z-index:-30; pointer-events:none;
+  transition:background 1.2s var(--ease-std);
+}
+
+/* ============================================================
+   MODE BANDS
+   The page alternates between dark and light bands.
+   Each <section.band> declares its own mode.
+   ============================================================ */
+.band { position:relative; padding:140px 0; transition:background 0.9s var(--ease-std), color 0.9s var(--ease-std); }
+.band--dark  { background:var(--obsidian); color:var(--platinum); }
+.band--paper { background:var(--platinum); color:var(--obsidian); }
+.band--ink   { background:var(--obsidian); color:var(--platinum); }   /* unified with --dark; kept as a class for layout/quote slabs */
+
+.band--dark + .band--paper, .band--paper + .band--dark, .band--ink + .band--paper, .band--paper + .band--ink {
+  /* hairline scroll-edge between mode flips */
+  border-top:1px solid rgba(0,0,0,0.0);
+}
+
+.col      { max-width:var(--col);      margin:0 auto; padding:0 32px; }
+.col-wide { max-width:var(--col-wide); margin:0 auto; padding:0 48px; }
+
+/* ============================================================
+   GLOBAL CHROME
+   Top progress hairline + side chapter spine.
+   Both glass, that's where glass earns its keep.
+   ============================================================ */
+#progress {
+  position:fixed; top:0; left:0; right:0; height:2px;
+  z-index:200; pointer-events:none;
+  background:transparent;
+}
+#progress::after {
+  content:''; position:absolute; left:0; top:0; bottom:0;
+  width:var(--p,0%);
+  background:linear-gradient(90deg, var(--sapphire) 0%, var(--sapphire-deep) 100%);
+  transition:width 0.05s linear;
+}
+
+#topnav {
+  position:fixed; top:0; left:0; right:0; height:60px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 32px; z-index:150;
+  font-family:var(--mono); font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--platinum);
+  background:rgba(3,3,3,0.55);
+  backdrop-filter:blur(14px) saturate(140%);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  transition:background 0.6s var(--ease-std), color 0.6s var(--ease-std), border-color 0.6s var(--ease-std);
+}
+#topnav.is-paper {
+  background:rgba(245,245,247,0.82);
+  border-bottom-color:rgba(0,0,0,0.08);
+  color:var(--ink);
+}
+#topnav .brand { font-family:var(--display); font-size:15px; font-weight:600; letter-spacing:0.04em; text-transform:none; color:inherit; text-decoration:none; }
+#topnav .brand:visited { color:inherit; }
+#topnav .brand:hover { opacity:0.85; }
+#topnav .crumbs { display:flex; gap:18px; align-items:center; }
+#topnav .crumbs a { color:inherit; text-decoration:none; opacity:0.7; transition:opacity .25s; }
+#topnav .crumbs a:hover { opacity:1; }
+#topnav .sep { opacity:0.35; }
+
+/* Chapter spine, fixed left rail */
+#spine {
+  position:fixed; left:18px; top:50%; transform:translateY(-50%);
+  z-index:130; pointer-events:auto;
+  display:flex; flex-direction:column; gap:14px;
+  padding:18px 14px;
+  background:rgba(3,3,3,0.45);
+  color:var(--platinum);
+  backdrop-filter:blur(14px) saturate(140%);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  border:1px solid rgba(255,255,255,0.08);
+  transition:background 0.6s var(--ease-std), border-color 0.6s var(--ease-std), color 0.6s var(--ease-std);
+}
+#spine.is-paper { background:rgba(245,245,247,0.78); border-color:rgba(0,0,0,0.10); color:var(--ink); }
+#spine .row { display:flex; align-items:center; gap:10px; cursor:pointer; }
+#spine .tick {
+  width:16px; height:1px; background:currentColor; opacity:0.35;
+  transition:width .35s var(--ease-out), opacity .35s var(--ease-out);
+}
+#spine .row.is-active .tick { width:28px; opacity:1; background:var(--sapphire); }
+#spine .row.is-paper-active .tick { background:var(--ink-blue); }
+#spine .label { font-family:var(--mono); font-size:9.5px; letter-spacing:0.18em; text-transform:uppercase; opacity:0.55; transition:opacity .35s; white-space:nowrap; }
+#spine .row:hover .label, #spine .row.is-active .label { opacity:1; }
+#spine .num { font-family:var(--mono); font-size:9px; opacity:0.4; width:14px; }
+@media (max-width:1180px) { #spine { display:none; } }
+
+/* Reading-status pebble bottom-right */
+#status {
+  position:fixed; right:24px; bottom:24px; z-index:130;
+  font-family:var(--mono); font-size:10px; letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--platinum);
+  padding:10px 14px;
+  background:rgba(3,3,3,0.45);
+  backdrop-filter:blur(14px) saturate(140%);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  border:1px solid rgba(255,255,255,0.08);
+  display:flex; gap:14px; align-items:center;
+  transition:background 0.6s var(--ease-std), border-color 0.6s var(--ease-std), color 0.6s var(--ease-std);
+}
+#status.is-paper { background:rgba(245,245,247,0.78); border-color:rgba(0,0,0,0.10); color:var(--ink); }
+#status .dot { width:5px; height:5px; background:var(--sapphire); display:inline-block; }
+#status .pct { color:var(--sapphire); font-weight:500; }
+#status.is-paper .dot { background:var(--ink-blue); }
+#status.is-paper .pct { color:var(--ink-blue); }
+
+/* ============================================================
+   FRONT MATTER (dark hero)
+   ============================================================ */
+.front {
+  min-height:100vh;
+  padding:160px 0 100px;
+  display:flex; flex-direction:column; justify-content:center;
+  position:relative; overflow:hidden;
+}
+.front .col-wide { position:relative; z-index:2; }
+.front .meta-row { font-family:var(--mono); font-size:11px; letter-spacing:0.30em; text-transform:uppercase; color:var(--tungsten); margin-bottom:40px; display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+.front .meta-row .sep { opacity:0.4; }
+.front h1 {
+  font-family:var(--display); font-weight:600;
+  font-size:clamp(44px, 5.0vw, 72px);
+  letter-spacing:-0.018em; line-height:1.06;
+  color:var(--flare); margin-bottom:36px;
+  max-width:18ch;
+}
+.front .abstract {
+  font-family:var(--body); font-style:italic;
+  font-size:22px; line-height:1.62; color:var(--platinum);
+  max-width:60ch; margin-bottom:48px;
+}
+.front .byline { display:flex; gap:36px; flex-wrap:wrap;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.20em; text-transform:uppercase; color:var(--tungsten); }
+.front .byline strong { color:var(--platinum); font-weight:500; display:block; margin-top:6px; letter-spacing:0.08em; font-family:var(--body); font-style:italic; font-size:14px; text-transform:none; }
+
+/* Citation block in front matter, looks like a journal head */
+.front .citation {
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.10em; color:var(--tungsten);
+  border-top:1px solid rgba(255,255,255,0.18);
+  padding-top:24px;
+  line-height:1.85;
+}
+.front .citation b { color:var(--platinum); font-weight:500; }
+
+/* Ambient signal, a quiet calibrated arc, sits in the hero background */
+.ambient {
+  position:absolute; right:-12%; top:50%; transform:translateY(-50%);
+  width:64%; max-width:820px; aspect-ratio:1; pointer-events:none;
+  z-index:1;
+  opacity:0; animation:ambient-fade 1.6s 0.6s var(--ease-out) forwards;
+}
+@keyframes ambient-fade { to { opacity:0.32; } }
+.ambient svg { width:100%; height:100%; display:block; }
+/* On wider viewports the abstract + byline sit in a left column so the ambient
+   has visual room on the right; on narrower it stacks. */
+.front .grid { display:grid; grid-template-columns:minmax(0,1fr); gap:40px; }
+@media (min-width:980px) {
+  .front .grid { grid-template-columns:minmax(0,1fr) 320px; gap:80px; align-items:end; }
+}
+
+/* ============================================================
+   READING SECTIONS, PAPER MODE
+   ============================================================ */
+.band--paper h2 {
+  font-family:var(--display); font-weight:600; color:var(--ink);
+  font-size:clamp(34px, 3.6vw, 48px); letter-spacing:-0.012em; line-height:1.12;
+  margin:0 auto 28px; max-width:var(--col); padding:0 32px;
+}
+.band--paper .eyebrow {
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.30em; text-transform:uppercase;
+  color:var(--ink-blue); margin:0 auto 18px; max-width:var(--col); padding:0 32px;
+}
+.band--paper .lede {
+  font-family:var(--body); font-style:italic; font-size:21px; line-height:1.6; color:var(--ink-2);
+  margin:0 auto 36px; max-width:var(--col); padding:0 32px;
+}
+.band--paper p {
+  margin:0 auto 22px; max-width:var(--col); padding:0 32px;
+  font-size:18px; line-height:1.78; color:var(--ink);
+}
+
+/* Drop cap on first paragraph after h2.is-chapter */
+.has-dropcap::first-letter {
+  font-family:var(--display); font-weight:600;
+  font-size:5.6em; line-height:0.86;
+  float:left; margin:0.06em 0.10em -0.08em 0;
+  color:var(--ink-blue);
+}
+
+/* Dark mode prose */
+.band--dark p, .band--ink p {
+  margin:0 auto 22px; max-width:var(--col); padding:0 32px;
+  font-size:18px; line-height:1.78; color:var(--platinum);
+}
+.band--dark h2, .band--ink h2 {
+  font-family:var(--display); font-weight:600; color:var(--flare);
+  font-size:clamp(34px, 3.6vw, 48px); letter-spacing:-0.012em; line-height:1.12;
+  margin:0 auto 28px; max-width:var(--col); padding:0 32px;
+}
+.band--dark .eyebrow, .band--ink .eyebrow {
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.30em; text-transform:uppercase;
+  color:var(--sapphire); margin:0 auto 18px; max-width:var(--col); padding:0 32px;
+}
+.band--dark .lede, .band--ink .lede {
+  font-family:var(--body); font-style:italic; font-size:21px; line-height:1.6; color:var(--tungsten);
+  margin:0 auto 36px; max-width:var(--col); padding:0 32px;
+}
+
+/* ============================================================
+   GLOSSARY TERMS, dotted-underline + glass tooltip
+   <span class="gloss" data-def="...">term</span>
+   ============================================================ */
+.gloss {
+  border-bottom:1px dotted currentColor;
+  cursor:help;
+  position:relative;
+}
+.gloss:hover { color:var(--ink-blue); }
+.band--dark .gloss:hover, .band--ink .gloss:hover { color:var(--sapphire); }
+.gloss .gloss-tip {
+  position:absolute; left:50%; transform:translate(-50%, -8px);
+  bottom:100%; min-width:280px; max-width:340px;
+  font-family:var(--body); font-style:italic; font-size:13.5px; line-height:1.55;
+  font-weight:400;
+  color:var(--ink); padding:14px 16px;
+  background:rgba(255,255,255,0.92);
+  backdrop-filter:blur(16px) saturate(140%);
+  -webkit-backdrop-filter:blur(16px) saturate(140%);
+  border:1px solid rgba(0,0,0,0.10);
+  box-shadow:0 14px 40px rgba(0,0,0,0.18);
+  opacity:0; pointer-events:none;
+  transition:opacity .25s var(--ease-std), transform .25s var(--ease-std);
+  z-index:120;
+  text-align:left;
+}
+.band--dark .gloss .gloss-tip, .band--ink .gloss .gloss-tip {
+  background:rgba(20,20,20,0.92); color:var(--platinum);
+  border-color:rgba(255,255,255,0.10);
+}
+.gloss:hover .gloss-tip { opacity:1; transform:translate(-50%, -14px); }
+
+/* ============================================================
+   INTERNAL LINK PREVIEW CARDS
+   <a class="xlink" data-preview-id="case-03"...>
+   ============================================================ */
+.xlink {
+  color:var(--ink-blue); text-decoration:none;
+  border-bottom:1px solid currentColor;
+  position:relative;
+  transition:color .25s;
+}
+.band--dark .xlink, .band--ink .xlink { color:var(--sapphire); }
+.xlink:hover { color:var(--hansa); }
+.band--dark .xlink:hover, .band--ink .xlink:hover { color:var(--flare); }
+
+#hover-preview {
+  position:fixed; z-index:140; pointer-events:none;
+  width:340px; padding:22px 22px 20px;
+  background:rgba(20,20,20,0.92);
+  color:var(--platinum);
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  border:1px solid rgba(255,255,255,0.10);
+  box-shadow:0 18px 60px rgba(0,0,0,0.45);
+  opacity:0; transform:translateY(8px);
+  transition:opacity .25s var(--ease-std), transform .25s var(--ease-std);
+}
+#hover-preview.is-paper {
+  background:rgba(245,243,238,0.94); color:var(--ink);
+  border-color:rgba(0,0,0,0.10); box-shadow:0 18px 60px rgba(0,0,0,0.18);
+}
+#hover-preview.is-on { opacity:1; transform:translateY(0); }
+#hover-preview .h-eb { font-family:var(--mono); font-size:9.5px; letter-spacing:0.30em; text-transform:uppercase; color:var(--sapphire); margin-bottom:10px; }
+#hover-preview.is-paper .h-eb { color:var(--ink-blue); }
+#hover-preview .h-t  { font-family:var(--display); font-size:20px; font-weight:600; line-height:1.22; margin-bottom:10px; }
+#hover-preview .h-d  { font-family:var(--body); font-size:13.5px; line-height:1.6; opacity:0.85; }
+#hover-preview .h-ft { font-family:var(--mono); font-size:9.5px; letter-spacing:0.20em; text-transform:uppercase; opacity:0.6; margin-top:14px; padding-top:12px; border-top:1px solid currentColor; }
+
+/* ============================================================
+   PULL QUOTES, dark INK band, full bleed
+   ============================================================ */
+.pullquote {
+  font-family:var(--display); font-style:italic; font-weight:500;
+  font-size:clamp(28px, 3.6vw, 48px); line-height:1.22;
+  color:var(--flare);
+  max-width:18ch; margin:0 auto;
+  letter-spacing:-0.005em;
+  text-align:center;
+}
+.pullquote::before { content:'\201C'; display:block; font-style:normal; font-size:1.6em; line-height:0; color:var(--sapphire); margin-bottom:14px; }
+.pullquote .qa {
+  display:block; margin-top:36px;
+  font-family:var(--mono); font-size:11px; font-style:normal; font-weight:400;
+  letter-spacing:0.30em; text-transform:uppercase; color:var(--tungsten);
+}
+
+/* ============================================================
+   FIGURES, full-bleed, paper-mode chart card
+   ============================================================ */
+.figure {
+  margin:48px auto;
+  max-width:var(--col-wide); padding:0 32px;
+}
+.figure .frame {
+  position:relative;
+  background:#fff;
+  border:1px solid var(--paper-3);
+  padding:32px 36px 28px;
+  transition:filter .35s var(--ease-std);
+}
+.band--dark .figure .frame, .band--ink .figure .frame {
+  background:#0A0A0A; border-color:var(--graphite);
+}
+.figure .frame:hover { filter:brightness(1.02); }
+.figure .cap {
+  font-family:var(--mono); font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--ink-3); margin-top:14px; max-width:60ch;
+}
+.band--dark .figure .cap, .band--ink .figure .cap { color:var(--tungsten); }
+.figure .cap .num { color:var(--ink-blue); margin-right:10px; }
+.band--dark .figure .cap .num, .band--ink .figure .cap .num { color:var(--sapphire); }
+
+/* ============================================================
+   STATS STRIP, sharp, no boxes
+   ============================================================ */
+.stats {
+  max-width:var(--col-wide); margin:48px auto; padding:0 32px;
+  display:grid; grid-template-columns:repeat(4, 1fr); gap:0;
+  border-top:1px solid var(--paper-3); border-bottom:1px solid var(--paper-3);
+}
+.band--dark .stats, .band--ink .stats { border-color:var(--graphite); }
+.stats .s {
+  padding:32px 24px; border-right:1px solid var(--paper-3);
+}
+.stats .s:last-child { border-right:0; }
+.band--dark .stats .s, .band--ink .stats .s { border-right-color:var(--graphite); }
+.stats .v { font-family:var(--mono); font-weight:500; font-size:38px; color:var(--ink); line-height:1; margin-bottom:10px; }
+.band--dark .stats .v, .band--ink .stats .v { color:var(--flare); }
+.stats .l { font-family:var(--mono); font-size:10px; letter-spacing:0.22em; text-transform:uppercase; color:var(--ink-3); }
+.band--dark .stats .l, .band--ink .stats .l { color:var(--tungsten); }
+
+@media (max-width:880px) { .stats { grid-template-columns:repeat(2,1fr); } .stats .s:nth-child(2) { border-right:0; } }
+
+/* ============================================================
+   TAGS, flat rectangular, no pills
+   ============================================================ */
+.tagrow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.tag {
+  font-family:var(--mono); font-size:10px; letter-spacing:0.20em; text-transform:uppercase;
+  color:var(--ink-3); border:1px solid var(--paper-3);
+  padding:6px 12px; background:transparent;
+}
+.band--dark .tag, .band--ink .tag { color:var(--tungsten); border-color:var(--graphite); }
+.tag.is-on { color:var(--ink-blue); border-color:var(--ink-blue); }
+.band--dark .tag.is-on, .band--ink .tag.is-on { color:var(--sapphire); border-color:var(--sapphire); }
+
+/* Bracket-style label (for "Case 07", category eyebrows) */
+.bracket {
+  font-family:var(--mono); font-size:10px; letter-spacing:0.30em; text-transform:uppercase; color:inherit;
+}
+.bracket::before, .bracket::after { content:''; display:inline-block; width:14px; height:1px; background:currentColor; vertical-align:middle; opacity:0.5; }
+.bracket::before { margin-right:10px; }
+.bracket::after  { margin-left:10px; }
+
+/* ============================================================
+   METHODOLOGY CALLOUT, sharp aside on paper
+   ============================================================ */
+.method {
+  max-width:var(--col); margin:36px auto; padding:0 32px;
+}
+.method .inner {
+  border-left:2px solid var(--ink-blue);
+  padding:20px 26px;
+  background:var(--paper-2);
+  font-family:var(--body); font-size:15.5px; line-height:1.7; color:var(--ink-2);
+}
+.band--dark .method .inner, .band--ink .method .inner { background:var(--charcoal); border-left-color:var(--sapphire); color:var(--platinum); }
+.method .lab { font-family:var(--mono); font-size:9.5px; letter-spacing:0.30em; text-transform:uppercase; color:var(--ink-blue); margin-bottom:8px; }
+.band--dark .method .lab, .band--ink .method .lab { color:var(--sapphire); }
+
+/* ============================================================
+   BACK MATTER
+   ============================================================ */
+.back-matter { padding-top:120px; padding-bottom:160px; }
+.back-matter h3 {
+  font-family:var(--display); font-weight:600; font-size:24px; line-height:1.2; color:var(--flare);
+  margin:0 auto 22px; max-width:var(--col-wide); padding:0 48px;
+}
+.back-matter .biblio { max-width:var(--col-wide); margin:0 auto 60px; padding:0 48px; }
+.back-matter .biblio li {
+  list-style:none;
+  font-family:var(--body); font-size:14.5px; line-height:1.65; color:var(--platinum);
+  padding:14px 0; border-top:1px solid var(--graphite);
+  display:grid; grid-template-columns:50px 1fr; gap:20px;
+}
+.back-matter .biblio li:last-child { border-bottom:1px solid var(--graphite); }
+.back-matter .biblio .n { font-family:var(--mono); font-size:11px; color:var(--sapphire); letter-spacing:0.20em; }
+.back-matter .biblio .ent i { color:var(--tungsten); }
+
+.back-matter .related { max-width:var(--col-wide); margin:0 auto 60px; padding:0 48px; }
+.related-grid {
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:0;
+  border-top:1px solid var(--graphite); border-bottom:1px solid var(--graphite);
+}
+.r-card {
+  display:block; padding:28px 28px 32px;
+  border-right:1px solid var(--graphite);
+  text-decoration:none; color:inherit; position:relative;
+  transition:background .35s var(--ease-std);
+}
+.r-card:last-child { border-right:0; }
+.r-card:hover { background:rgba(77,140,255,0.04); }
+.r-card .eb { font-family:var(--mono); font-size:9.5px; letter-spacing:0.28em; text-transform:uppercase; color:var(--sapphire); margin-bottom:14px; }
+.r-card .ti { font-family:var(--display); font-size:22px; font-weight:600; line-height:1.18; color:var(--flare); margin-bottom:12px; }
+.r-card .ds { font-family:var(--body); font-size:14px; line-height:1.65; color:var(--tungsten); margin-bottom:20px; }
+.r-card .ar { font-family:var(--mono); font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:var(--platinum); opacity:0.7; }
+.r-card:hover .ar { opacity:1; }
+@media (max-width:880px) { .related-grid { grid-template-columns:1fr; } .r-card { border-right:0; border-bottom:1px solid var(--graphite); } .r-card:last-child { border-bottom:0; } }
+
+/* Cite-graph (mini SVG network) */
+.citegraph { max-width:var(--col-wide); margin:0 auto 60px; padding:0 48px; }
+.citegraph svg { width:100%; height:240px; display:block; background:var(--charcoal); border:1px solid var(--graphite); }
+.citegraph .lab { font-family:var(--mono); font-size:10px; letter-spacing:0.22em; text-transform:uppercase; color:var(--tungsten); margin-top:10px; }
+
+/* Next chapter */
+.next-chap {
+  max-width:var(--col-wide); margin:80px auto 0; padding:48px;
+  border-top:1px solid var(--graphite); border-bottom:1px solid var(--graphite);
+  display:flex; align-items:center; justify-content:space-between; gap:32px;
+  text-decoration:none; color:inherit;
+  transition:background .35s var(--ease-std);
+}
+.next-chap:hover { background:rgba(77,140,255,0.05); }
+.next-chap .lf .eb { font-family:var(--mono); font-size:10px; letter-spacing:0.30em; text-transform:uppercase; color:var(--sapphire); margin-bottom:12px; }
+.next-chap .lf .ti { font-family:var(--display); font-size:32px; font-weight:600; color:var(--flare); line-height:1.18; max-width:22ch; }
+.next-chap .rt { font-family:var(--mono); font-size:14px; letter-spacing:0.20em; text-transform:uppercase; color:var(--sapphire); }
+
+/* ============================================================
+   GLOSSARY HOVER state, hide tooltip when JS detects mode change
+   ============================================================ */
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer.site-foot {
+  background:var(--obsidian); color:var(--tungsten);
+  padding:60px 48px; border-top:1px solid var(--graphite);
+  font-family:var(--mono); font-size:10px; letter-spacing:0.16em; text-transform:uppercase;
+  display:flex; justify-content:space-between; align-items:center;
+}
+footer.site-foot a { color:inherit; text-decoration:none; opacity:0.8; }
+footer.site-foot a:hover { opacity:1; color:var(--platinum); }
+
+/* ============================================================
+   Reveal, translate + opacity, no bounces
+   ============================================================ */
+.reveal { opacity:0; transform:translateY(18px); transition:opacity .9s var(--ease-out), transform .9s var(--ease-out); }
+.reveal.is-on { opacity:1; transform:none; }
+
+/* ============================================================
+   Scroll-tied parallax helper (figures move at 0.96x scroll)
+   ============================================================ */
+.parallax { transform:translate3d(0,0,0); will-change:transform; }
+
+/* Minor: list item style for ul.bullets */
+ul.bullets { max-width:var(--col); margin:0 auto 22px; padding:0 32px; list-style:none; }
+ul.bullets li { padding-left:22px; position:relative; margin-bottom:10px; font-size:17px; line-height:1.7; color:inherit; }
+ul.bullets li::before { content:'\25B8'; position:absolute; left:0; top:1px; font-family:var(--mono); color:var(--ink-blue); font-size:11px; }
+.band--dark ul.bullets li::before, .band--ink ul.bullets li::before { color:var(--sapphire); }
+
+
+/* ============================================================
+   SIDENOTES: Adaptive Tufte-Style (Institutional Standard)
+   ============================================================ */
+.sn { position:relative; }
+.sn-num { font-family:var(--mono); font-size:9px; color:var(--sapphire); vertical-align:super; cursor:pointer; padding:0 2px; }
+.band--paper .sn-num { color:var(--ink-blue); }
+.sn-num:hover { color:var(--hansa); }
+.sn-body { display:none; }
+
+@media (min-width: 1240px) {
+  p.col-with-sidenotes { position:relative; }
+  .sn { position:absolute; left:calc(100% + 40px); width:240px; font-family:var(--body); font-size:12.5px; line-height:1.5; color:var(--tungsten); }
+  .band--paper .sn { color:var(--ink-3); }
+  .sn-num { position:absolute; left:-24px; top:2px; }
+  .sn-body { display:block; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .band--paper .sn-body { border-bottom-color:rgba(0,0,0,0.06); }
+}
+
+@media (max-width: 1239px) {
+  p.col-with-sidenotes { position:relative; }
+  .sn { display:inline; }
+  .sn-body { display:block; margin:12px 0; padding:12px 16px; font-family:var(--body); font-size:14px; line-height:1.6; color:var(--platinum); background:rgba(255,255,255,0.04); border-left:2px solid var(--sapphire); }
+  .band--paper .sn-body { color:var(--ink); background:rgba(0,0,0,0.04); border-left-color:var(--ink-blue); }
+  .sn-num { display:inline; position:static; font-size:11px; margin-right:6px; }
+}
+
+
+/* ============================================================
+   MASTER GRID & PORTRAIT MODE POLISH
+   ============================================================ */
+:root { --grid-left: max(32px, calc(50vw - 540px)); }
+@media (min-width: 1360px) { :root { --grid-left: max(260px, calc(50vw - 540px)); } }
+
+@media (min-width: 1240px) {
+  section.band:not(.front) {
+    display: grid;
+    grid-template-columns: var(--grid-left) 680px 400px minmax(16px, 1fr);
+    align-items: start;
+  }
+  section.band:not(.front) > * {
+    grid-column: 2 / 3;
+    margin-left: 0 !important; 
+    margin-right: 0 !important;
+  }
+  section.band:not(.front) > .col-wide, 
+  section.band:not(.front) > .stat-grid, 
+  section.band:not(.front) > .figure, 
+  section.band:not(.front) > .report-prose {
+    grid-column: 2 / 4;
+    width: 100%; 
+    max-width: none;
+  }
+  .stat-grid { justify-content: start !important; }
+}
+
+@media (min-width: 1180px) and (max-width: 1359px) {
+  #spine {
+    width: 44px; overflow: hidden; white-space: nowrap;
+    transition: width 0.4s cubic-bezier(0.16,1,0.3,1), background 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+  #spine:hover { width: 250px; }
+}
+@media (min-width: 1360px) {
+  #spine { width: auto; overflow: visible; }
+}
+
+/* Portrait Mode Space Fix */
+.front { min-height: clamp(400px, 80vh, 850px) !important; justify-content: center !important; }
+
+</style>
+</head>
+
+<body>
+
+<!-- Atmosphere, invisible during paper bands -->
+<div class="atmosphere"></div>
+
+<!-- Reading progress -->
+<div id="progress"></div>
+
+<!-- Top nav -->
+<header id="topnav">
+  <a href="#" class="brand">Dr. Heather Leffew</a>
+  <div class="crumbs">
+    <a href="#"><- Writing</a>
+    <span class="sep">/</span>
+    <a href="#">Clinical &amp; behavioral ML</a>
+    <span class="sep">/</span>
+    <span>Entity resolution at Spokeo</span>
+  </div>
+</header>
+
+<!-- Chapter spine -->
+<aside id="spine"></aside>
+
+<!-- Reading status -->
+<div id="status">
+  <span class="dot"></span>
+  <span class="sec">Front matter</span>
+  <span class="pct">0%</span>
+  <span>/</span>
+  <span class="time">~14 min</span>
+</div>
+
+<!-- Hover preview portal -->
+<div id="hover-preview">
+  <div class="h-eb"></div>
+  <div class="h-t"></div>
+  <div class="h-d"></div>
+  <div class="h-ft"></div>
+</div>
+
+
+<!-- ============================================================
+     FRONT MATTER
+     ============================================================ -->
+<section class="band band--dark front" data-spine="Front" data-section="Front matter">
+  <!-- Ambient calibration arc (background layer) -->
+  <div class="ambient" aria-hidden="true">
+    <svg viewBox="0 0 600 600" fill="none">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#4D8CFF" stop-opacity="0.55"/>
+          <stop offset="100%" stop-color="#0F52BA" stop-opacity="0.0"/>
+        </linearGradient>
+      </defs>
+      <g stroke="url(#g1)" stroke-width="1" fill="none">
+        <circle cx="300" cy="300" r="80"/>
+        <circle cx="300" cy="300" r="140"/>
+        <circle cx="300" cy="300" r="200"/>
+        <circle cx="300" cy="300" r="260"/>
+      </g>
+      <line x1="60" y1="540" x2="540" y2="60" stroke="#4D8CFF" stroke-width="1" stroke-dasharray="2 6" opacity="0.8"/>
+      <g fill="#4D8CFF" opacity="0.7">
+        <circle cx="120" cy="490" r="2.5"/>
+        <circle cx="180" cy="430" r="2.5"/>
+        <circle cx="240" cy="380" r="2.5"/>
+        <circle cx="300" cy="310" r="2.5"/>
+        <circle cx="360" cy="260" r="2.5"/>
+        <circle cx="420" cy="210" r="2.5"/>
+        <circle cx="480" cy="140" r="2.5"/>
+      </g>
+      <circle cx="380" cy="380" r="3.5" fill="#7A1626" opacity="0.95"/>
+      <text x="400" y="386" font-family="JetBrains Mono" font-size="10" fill="#A1A1A6" letter-spacing="2">OUTLIER</text>
+    </svg>
+  </div>
+
+  <div class="col-wide">
+    <div class="grid">
+     <div>
+      <div class="meta-row">
+        <span class="bracket">Graph ML &amp; identity</span>
+        <span class="sep">/</span>
+        <span>Production pipeline, Spokeo</span>
+        <span class="sep">/</span>
+        <span>14 min read</span>
+      </div>
+
+      <h1>Entity resolution at Spokeo: measure first, rebuild only if the measurements ask.</h1>
+
+      <p class="abstract">
+        A research program against a 49TB consumer-identity graph that began as a rebuild and turned into a measurement. The legacy pipeline ran on a 17-rule heuristic nobody had written down; the operational lore held that one in eleven person identifiers shifted per iteration. The program forensically recovered the rules, measured the actual churn at 0.004%, found the one place the graph really did fail, repaired it surgically, and decided not to rebuild the rest.
+      </p>
+
+      <div class="byline">
+        <div>
+          Surface
+          <strong>The Consumer Identity Graph: 49TB across 59 vendor source partitions, ~8B person-graph rows, 60-day batch cadence on a 17-rule undocumented heuristic</strong>
+        </div>
+        <div>
+          Method
+          <strong>Forensic recovery of the rules, deterministic 1% hash-aligned stability sampling across 96M records, defect isolation, surgical repair, and a supervised-model bake-off against the heuristic on its own abstain surface</strong>
+        </div>
+        <div>
+          Outcome
+          <strong>One defect class found and repaired (35,097 clusters, zero record orphaning); core processing time reduced from 150+ hours to 24 to 36 hours; ML held in shadow mode after the model recapitulated the heuristic exactly</strong>
+        </div>
+      </div>
+     </div>
+     <div></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     1, SETUP (paper)
+     ============================================================ -->
+<section class="band band--paper" data-spine="Setup" data-section="What this is">
+  <div class="eyebrow reveal">01 / Setup</div>
+  <h2 class="reveal is-chapter">Measure first. Rebuild only if the measurements ask.</h2>
+
+  <p class="has-dropcap reveal col-with-sidenotes">
+    The Consumer Identity Graph at Spokeo determines which phone number, address, court record, or social profile belongs to which person, and every downstream product that consumes identity data depends on it. The graph stood at roughly 49TB across 59 vendor source partitions, with about eight billion person-graph rows in the live state. It ran on a 60-day batch cadence against a deterministic <span class="gloss">heuristic<span class="gloss-tip"><b>The legacy heuristic</b>, a 17-rule waterfall that decides which records belong to the same person, executed in strict sequence on roughly 75GB of edge data per iteration. Its full logic was not formally documented inside any internal repository at the start of the program.</span></span> nobody had written down. Internal lore held that one in eleven person identifiers shifted structurally with every iteration, an estimate of about 9.09% churn that nobody had measured but several teams were quietly pricing into roadmap decisions<span class="sn"><span class="sn-num">1</span><span class="sn-body">9.09% was 1 in 11. Nobody had measured 1 in 11; somebody had said "about one in ten or eleven" once and the number had hardened into a planning input. Production lore reaches roadmaps the same way every time.</span></span>.
+  </p>
+
+  <p class="reveal col-with-sidenotes">
+    The brief the program started with was the inverse of the obvious one. The obvious move was to replace the heuristic with a learned model and call the resulting reduction in churn a result. The brief instead was to measure the system that already existed: forensically recover the rules, calculate the actual churn rate against retained evidence, isolate where the graph genuinely failed, and only then decide whether to rearchitect anything. The constraint was that any architectural change displacing SSN-based linking, which an unmeasured rebuild was likely to do by accident, would dissolve roughly two-thirds of the graph's identity associations on the way out the door.
+  </p>
+
+  <p class="reveal">
+    What follows is twenty research notebooks, NB01 through NB20, condensed to a case study. The findings are not flattering to the team's first instinct. The folk churn estimate was wrong by three orders of magnitude. The supervised model trained against the heuristic's evidence reproduced the heuristic exactly. The architectural review at Phase 12, against an explicit eleven-gate bar, declined to displace the bounded-repair posture with a Mixture-of-Experts rebuild. Each of those is in this writeup, in plain language, because measuring a system honestly only matters if the conclusions are reported when they are inconvenient.
+  </p>
+
+  <div class="stats reveal">
+    <div class="s"><div class="v">49 TB</div><div class="l">Multi-vendor data</div></div>
+    <div class="s"><div class="v">59</div><div class="l">Vendor source partitions</div></div>
+    <div class="s"><div class="v">8 B</div><div class="l">Person-graph rows</div></div>
+    <div class="s"><div class="v">20</div><div class="l">Research notebooks</div></div>
+  </div>
+
+  <div class="method reveal">
+    <div class="inner">
+      <div class="lab">What the program was for</div>
+      The brief was not "build a better entity resolver." The brief was "find out what the current entity resolver actually does, find out what it actually breaks on, and fix only what the evidence proves is broken." The discipline this required, against the team's standing instinct to rebuild, is the only reason the case study exists. A program that had skipped the measurement phase would have shipped a Mixture-of-Experts replacement and reported it as a win against a churn rate it had never measured.
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     2, ARCHITECTURE (ink)
+     ============================================================ -->
+<section class="band band--ink" data-spine="Architecture" data-section="The undocumented heuristic">
+  <div class="eyebrow reveal">02 / Architecture</div>
+  <h2 class="reveal">The architecture nobody had written down.</h2>
+
+  <p class="reveal col-with-sidenotes">
+    Forensic analysis of the v13 pipeline checkpoint recovered the full match architecture for the first time. Seventeen rules execute in strict waterfall sequence, processing roughly 75GB of edge data per iteration before producing a single person identifier. They divide into four tiers by anchor: eight rules anchored on Social Security number, three on date of birth combined with phone, three on date of birth combined with email, and three on date of birth combined with address. The order matters. The first rule that matches a record assigns its person identifier and the remaining rules see the record as already decided.
+  </p>
+
+  <div class="figure reveal">
+    <div class="frame parallax">
+      <svg viewBox="0 0 920 360" style="width:100%;display:block;">
+        <!-- frame -->
+        <line x1="60" y1="320" x2="880" y2="320" stroke="#222" stroke-width="1"/>
+        <!-- y-axis label -->
+        <text x="36" y="180" font-family="JetBrains Mono" font-size="10" fill="#A1A1A6" transform="rotate(-90 36 180)" text-anchor="middle" letter-spacing="2">edge volume, GB</text>
+        <!-- 4 horizontal bars -->
+        <g font-family="JetBrains Mono" font-size="10" fill="#F5F5F7">
+          <!-- SSN: 49.5 GB, full width -->
+          <text x="80" y="62">SSN-anchored (8 rules)</text>
+          <rect x="80" y="72" width="760" height="34" fill="#0F3A6B"/>
+          <text x="850" y="94" text-anchor="end" fill="#FFFFFF" font-weight="500">49.5 GB</text>
+          <!-- DOB+phone: 17.8 GB / 49.5 = 35.96% -->
+          <text x="80" y="138">DOB + phone (3 rules)</text>
+          <rect x="80" y="148" width="273" height="34" fill="#DBA844"/>
+          <text x="363" y="170" text-anchor="start" fill="#DBA844" font-weight="500">17.8 GB</text>
+          <!-- DOB+email: 6.0 GB / 49.5 = 12.12% -->
+          <text x="80" y="214">DOB + email (3 rules)</text>
+          <rect x="80" y="224" width="92" height="34" fill="#1A4A38"/>
+          <text x="182" y="246" text-anchor="start" fill="#1A4A38" font-weight="500">6.0 GB</text>
+          <!-- DOB+address: 1.9 GB / 49.5 = 3.84% -->
+          <text x="80" y="290">DOB + address (3 rules)</text>
+          <rect x="80" y="300" width="29" height="14" fill="#7A1626"/>
+          <text x="119" y="312" text-anchor="start" fill="#7A1626" font-weight="500">1.9 GB</text>
+        </g>
+        <!-- annotation -->
+        <text x="850" y="62" font-family="JetBrains Mono" font-size="9" fill="#4D8CFF" letter-spacing="2" text-anchor="end">66.93% OF ALL EDGES</text>
+      </svg>
+    </div>
+    <div class="cap"><span class="num">Fig. 1 . </span> Edge volume by anchor category in the v13 checkpoint. The eight SSN-anchored rules account for 49.5GB of the roughly 75GB of edge data, or 66.93% of all matched edges. The graph's structural backbone is SSN; any architectural change that displaces SSN linking without a validated replacement dissolves two-thirds of the identity associations the graph holds.</div>
+  </div>
+
+  <p class="reveal">
+    The recovered structure is the precondition for everything that follows. Without the rule order written down, the team could not have constructed the conservative label packet against which the supervised model in Sec. 06 was eventually trained, could not have isolated the Partial-Null Bridging defect to a specific tier, and could not have argued at Phase 12 that the bounded posture was defensible. A pipeline you cannot describe is a pipeline you cannot honestly evaluate, and forensic recovery, which is unglamorous and yields no model artifact, was the most consequential single piece of work in the program.
+  </p>
+</section>
+
+
+<!-- ============================================================
+     3, STABILITY (paper)
+     ============================================================ -->
+<section class="band band--paper" data-spine="Stability" data-section="Measured churn">
+  <div class="eyebrow reveal">03 / Stability</div>
+  <h2 class="reveal">A folk estimate, off by three orders of magnitude.</h2>
+
+  <p class="reveal col-with-sidenotes">
+    To formalize the actual identifier churn rate, the team developed a deterministic 1% <span class="gloss">hash-aligned<span class="gloss-tip"><b>Hash-aligned sampling</b>, a sampling protocol that selects records by a deterministic hash of a stable key (here the person identifier) rather than by a random draw. Because the hash is deterministic, every record associated with a sampled person is retrieved identically across all sources and pipeline versions, preserving cluster integrity in the sample.</span></span> sampling protocol. Random sampling would have fractured cluster integrity by dropping the neighbors of every sampled person, which would have inflated the apparent churn and produced a number that measured the sampling artifact rather than the system<span class="sn"><span class="sn-num">2</span><span class="sn-body">Random 1% sampling would have dropped neighbors of every sampled person and inflated the apparent churn. The hash alignment is the difference between measuring stability and measuring sampling artifact.</span></span>. The hash alignment ensured every record associated with a sampled person was retrieved identically across all 59 data sources and across pipeline versions v12 and v13.
+  </p>
+
+  <p class="reveal col-with-sidenotes">
+    Analysis covered 96 million records. The aggregate person-identifier retention rate measured across versions v12 and v13 was 99.64%. Of the 0.36% that did register as changed, 98.2% were cosmetic re-labeling artifacts in which the cluster integrity and adjacent neighbors remained identical, the same set of people simply receiving a different identifier string. Substantive churn, defined as records genuinely moving between distinct people, measured at 0.004%. The folk estimate of 9.09% was off by roughly three orders of magnitude.
+  </p>
+
+  <div class="figure reveal">
+    <div class="frame parallax">
+      <svg viewBox="0 0 920 320" style="width:100%;display:block;">
+        <!-- two side-by-side panels -->
+        <g font-family="JetBrains Mono" font-size="10" fill="#5E5E5A">
+          <text x="240" y="40" text-anchor="middle" letter-spacing="2">FOLK ESTIMATE</text>
+          <text x="680" y="40" text-anchor="middle" letter-spacing="2">MEASURED</text>
+        </g>
+        <!-- left: 9.09% bar from bottom -->
+        <line x1="100" y1="270" x2="380" y2="270" stroke="#DDDDDD" stroke-width="1"/>
+        <line x1="100" y1="60"  x2="100" y2="270" stroke="#DDDDDD" stroke-width="1"/>
+        <text x="84" y="68"  text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#5E5E5A">10%</text>
+        <text x="84" y="170" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#5E5E5A">5%</text>
+        <text x="84" y="272" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#5E5E5A">0%</text>
+        <!-- 9.09% of full range 100->270 -> bar height 9.09/10 * 200 = 181.8 px -->
+        <rect x="180" y="78" width="120" height="192" fill="#7A1626" fill-opacity="0.85"/>
+        <text x="240" y="100" text-anchor="middle" font-family="Playfair Display" font-size="34" font-weight="600" fill="#FFFFFF" font-style="italic">9.09%</text>
+        <text x="240" y="290" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#7A1626" letter-spacing="2">PID SHIFTS / ITERATION (ASSUMED)</text>
+
+        <!-- right: 0.004% bar (a hair) -->
+        <line x1="540" y1="270" x2="820" y2="270" stroke="#DDDDDD" stroke-width="1"/>
+        <line x1="540" y1="60"  x2="540" y2="270" stroke="#DDDDDD" stroke-width="1"/>
+        <text x="524" y="68"  text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#5E5E5A">10%</text>
+        <text x="524" y="170" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#5E5E5A">5%</text>
+        <text x="524" y="272" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#5E5E5A">0%</text>
+        <!-- 0.004% bar height ~0.08 px, draw a thin sliver -->
+        <rect x="620" y="268" width="120" height="2" fill="#0F3A6B"/>
+        <text x="680" y="100" text-anchor="middle" font-family="Playfair Display" font-size="34" font-weight="600" fill="#0F3A6B" font-style="italic">0.004%</text>
+        <text x="680" y="125" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#0F3A6B" letter-spacing="2">SUBSTANTIVE CHURN (MEASURED)</text>
+        <text x="680" y="290" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5E5E5A" letter-spacing="2">96M RECORDS, V12 vs V13</text>
+
+        <!-- delta -->
+        <text x="460" y="170" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#7A1626" letter-spacing="2">~2,272x</text>
+        <text x="460" y="186" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#7A1626" letter-spacing="2">OVERESTIMATE</text>
+      </svg>
+    </div>
+    <div class="cap"><span class="num">Fig. 2 . </span> The folk estimate of 9.09% identifier churn (left) against the measured substantive churn of 0.004% (right). Both panels use the same vertical scale; the measured value is a sliver against the assumed value. The pipeline was being managed against a number that was wrong by a factor of roughly two thousand.</div>
+  </div>
+
+  <div class="method reveal">
+    <div class="inner">
+      <div class="lab">How the 1% sample was constructed</div>
+      Deterministic, not random. Each candidate record was hashed on a stable key, and a fixed hash range determined membership in the sample; the same record falls in or out of the sample identically every time. The consequence is that every neighbor of a sampled person is also retrieved, so the sample is a 1% slice of intact clusters rather than a 1% scatter of orphaned rows. Random 1% sampling, applied to the same task, would have produced a churn estimate dominated by the sampling itself, not by the pipeline. A measurement protocol that does not survive scrutiny does not produce numbers worth managing against.
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     4, DEFECT (ink)
+     ============================================================ -->
+<section class="band band--ink" data-spine="Defect" data-section="Partial-null bridging">
+  <div class="eyebrow reveal">04 / Defect</div>
+  <h2 class="reveal">The one place the graph really did fail.</h2>
+
+  <p class="reveal col-with-sidenotes">
+    With substantive churn measured at 0.004%, the program turned to actual quality failures. Cluster face-validity review across the conservative label packet isolated a single defect pattern in the Court Records tier, vendor source 33_01_01, that the team named Partial-Null Bridging. The mechanism is a three-record transitive closure failure that the pipeline's <span class="gloss">union-find<span class="gloss-tip"><b>Union-find</b>, a classical algorithm for maintaining disjoint sets under merge operations. Given a sequence of "A and B belong to the same group" assertions, it efficiently answers whether X and Y belong to the same group. Its transitive closure is a feature of the algorithm by design; it also makes the algorithm uncritical of the assertions it receives.</span></span> aggregator could not see and was structurally unable to reject. Person A holds SSN_1. Person B holds SSN_2. A third record, Record C, carries a null SSN but matches both Person A and Person B on date of birth and last name. The aggregator observes that A equals C and B equals C, and concludes by transitive closure that A equals B. Two distinct people merge into one identity. The defect surface contained 35,097 clusters of this type.
+  </p>
+
+  <div class="figure reveal">
+    <div class="frame parallax">
+      <svg viewBox="0 0 920 320" style="width:100%;display:block;">
+        <!-- title strip -->
+        <text x="240" y="38" font-family="JetBrains Mono" font-size="10" fill="#A1A1A6" text-anchor="middle" letter-spacing="2">LEGACY: TRANSITIVE MERGE</text>
+        <text x="680" y="38" font-family="JetBrains Mono" font-size="10" fill="#4D8CFF" text-anchor="middle" letter-spacing="2">VARIANT B: SPLIT BY ANCHOR</text>
+        <!-- vertical separator -->
+        <line x1="460" y1="60" x2="460" y2="290" stroke="#1A1A1A" stroke-width="1"/>
+
+        <!-- LEFT panel -->
+        <!-- bad transitive arc -->
+        <path d="M 100 130 Q 240 60 380 130" fill="none" stroke="#7A1626" stroke-width="1.4" stroke-dasharray="4 4"/>
+        <text x="240" y="62" font-family="JetBrains Mono" font-size="9" fill="#7A1626" text-anchor="middle" letter-spacing="2">INVALID MERGE</text>
+        <!-- A node -->
+        <circle cx="100" cy="160" r="34" fill="none" stroke="#3866A0" stroke-width="1.4"/>
+        <text x="100" y="158" font-family="Playfair Display" font-size="18" font-weight="600" fill="#FFFFFF" text-anchor="middle">A</text>
+        <text x="100" y="174" font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" text-anchor="middle">SSN_1</text>
+        <text x="100" y="220" font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" text-anchor="middle" letter-spacing="2">PERSON A</text>
+        <!-- C node -->
+        <circle cx="240" cy="160" r="26" fill="none" stroke="#5E5E5A" stroke-width="1.4" stroke-dasharray="3 3"/>
+        <text x="240" y="158" font-family="Playfair Display" font-size="14" font-weight="600" fill="#A1A1A6" text-anchor="middle">C</text>
+        <text x="240" y="172" font-family="JetBrains Mono" font-size="8" fill="#A1A1A6" text-anchor="middle">NULL SSN</text>
+        <text x="240" y="220" font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" text-anchor="middle" letter-spacing="2">RECORD C</text>
+        <!-- B node -->
+        <circle cx="380" cy="160" r="34" fill="none" stroke="#3866A0" stroke-width="1.4"/>
+        <text x="380" y="158" font-family="Playfair Display" font-size="18" font-weight="600" fill="#FFFFFF" text-anchor="middle">B</text>
+        <text x="380" y="174" font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" text-anchor="middle">SSN_2</text>
+        <text x="380" y="220" font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" text-anchor="middle" letter-spacing="2">PERSON B</text>
+        <!-- A=C and B=C edges -->
+        <line x1="134" y1="160" x2="214" y2="160" stroke="#3866A0" stroke-width="1"/>
+        <line x1="266" y1="160" x2="346" y2="160" stroke="#3866A0" stroke-width="1"/>
+        <text x="170" y="152" font-family="JetBrains Mono" font-size="8" fill="#A1A1A6" text-anchor="middle">DOB+LN</text>
+        <text x="306" y="152" font-family="JetBrains Mono" font-size="8" fill="#A1A1A6" text-anchor="middle">DOB+LN</text>
+        <!-- failure caption -->
+        <text x="240" y="270" font-family="Lora" font-style="italic" font-size="13" fill="#7A1626" text-anchor="middle">A = C, B = C, therefore A = B</text>
+        <text x="240" y="288" font-family="JetBrains Mono" font-size="8" fill="#7A1626" text-anchor="middle" letter-spacing="2">35,097 CLUSTERS LIKE THIS</text>
+
+        <!-- RIGHT panel -->
+        <!-- A node -->
+        <circle cx="540" cy="160" r="34" fill="none" stroke="#4D8CFF" stroke-width="1.4"/>
+        <text x="540" y="158" font-family="Playfair Display" font-size="18" font-weight="600" fill="#FFFFFF" text-anchor="middle">A</text>
+        <text x="540" y="174" font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" text-anchor="middle">SSN_1</text>
+        <text x="540" y="220" font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" text-anchor="middle" letter-spacing="2">PERSON A</text>
+        <!-- C node, assigned to A -->
+        <circle cx="680" cy="160" r="26" fill="none" stroke="#4D8CFF" stroke-width="1.4"/>
+        <text x="680" y="158" font-family="Playfair Display" font-size="14" font-weight="600" fill="#FFFFFF" text-anchor="middle">C</text>
+        <text x="680" y="172" font-family="JetBrains Mono" font-size="8" fill="#A1A1A6" text-anchor="middle">NULL SSN</text>
+        <text x="680" y="220" font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" text-anchor="middle" letter-spacing="2">RECORD C</text>
+        <!-- assignment arrow -->
+        <defs><marker id="arrowG" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#4D8CFF"/></marker></defs>
+        <path d="M 654 144 L 574 144" fill="none" stroke="#4D8CFF" stroke-width="1.2" marker-end="url(#arrowG)"/>
+        <text x="614" y="136" font-family="JetBrains Mono" font-size="8" fill="#4D8CFF" text-anchor="middle" letter-spacing="2">ASSIGNED</text>
+        <!-- B node, isolated -->
+        <circle cx="820" cy="160" r="34" fill="none" stroke="#4D8CFF" stroke-width="1.4"/>
+        <text x="820" y="158" font-family="Playfair Display" font-size="18" font-weight="600" fill="#FFFFFF" text-anchor="middle">B</text>
+        <text x="820" y="174" font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" text-anchor="middle">SSN_2</text>
+        <text x="820" y="220" font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" text-anchor="middle" letter-spacing="2">PERSON B</text>
+        <text x="820" y="240" font-family="JetBrains Mono" font-size="8" fill="#4D8CFF" text-anchor="middle" letter-spacing="2">DISTINCT IDENTITY</text>
+        <!-- success caption -->
+        <text x="680" y="270" font-family="Lora" font-style="italic" font-size="13" fill="#4D8CFF" text-anchor="middle">C reassigned to highest-similarity SSN anchor</text>
+        <text x="680" y="288" font-family="JetBrains Mono" font-size="8" fill="#4D8CFF" text-anchor="middle" letter-spacing="2">100% ELIMINATED, ZERO ORPHANED</text>
+      </svg>
+    </div>
+    <div class="cap"><span class="num">Fig. 3 . </span> The Partial-Null Bridging mechanism (left) and the Variant B repair (right). For every cluster containing multiple non-null SSN anchors, the repair job splits by SSN anchor, extracts each null-SSN row's date-of-birth and last-name signature, and reassigns the row to its highest-similarity anchor. Records that cannot be attributed with confidence are not orphaned, they are routed back into the conservative label packet for downstream review.</div>
+  </div>
+
+  <p class="reveal">
+    Two facts about the defect bound everything that follows. First, it is local: the failure is in the aggregator's transitive closure on a particular shape of evidence, not in the rules themselves, and not in the input data. Second, it is bounded: the defect surface is enumerable from the v13 checkpoint, and it is finite. Both facts are what made a surgical repair viable, and both facts are what made a wholesale rearchitecture, which would have rebuilt the parts of the pipeline that were not broken in order to reach the part that was, the wrong tool.
+  </p>
+</section>
+
+
+<!-- ============================================================
+     5, REPAIR (paper)
+     ============================================================ -->
+<section class="band band--paper" data-spine="Repair" data-section="Variant B repair">
+  <div class="eyebrow reveal">05 / Repair</div>
+  <h2 class="reveal">Variant B, surgical, zero record orphaning.</h2>
+
+  <p class="reveal col-with-sidenotes">
+    The repair job, named Variant B in the program record, runs against the enumerated defect surface. For every cluster containing two or more non-null SSN anchors, the job splits the cluster by SSN, extracts each null-SSN row's (date of birth, last name) signature, and reassigns the row to its highest-similarity SSN anchor. Records that fall below the similarity threshold are not orphaned; they are routed back into the conservative label packet that the supervised model in Sec. 06 was eventually trained against. The bar the repair was held to was zero record orphaning, because orphaning a record silently reintroduces the same class of failure on the next iteration through a different shape of evidence.
+  </p>
+
+  <p class="reveal col-with-sidenotes">
+    The alternative the program rejected was a learned tie-break: train a model on the same (DOB, last-name, candidate anchor) feature set and let it choose the anchor. The rejection was not on principle. The rejection was that the candidate evidence, when written down honestly, is identical to what the heuristic split-by-anchor procedure already used, and that the model would have introduced calibration, drift, and shadow-mode operational requirements without producing a different decision on the conservative cases or a defensible decision on the ambiguous ones. The repair did the available work, and it did it deterministically.
+  </p>
+
+  <div class="stats reveal">
+    <div class="s"><div class="v">35,097</div><div class="l">Defective clusters found</div></div>
+    <div class="s"><div class="v">100%</div><div class="l">Eliminated by Variant B</div></div>
+    <div class="s"><div class="v">0</div><div class="l">Records orphaned</div></div>
+    <div class="s"><div class="v">v14</div><div class="l">Pipeline checkpoint shipped</div></div>
+  </div>
+
+  <p class="reveal">
+    The repair is the smallest piece of the program by line count and the part the team is most willing to defend in writing. Smallness is the property: Variant B is auditable, it is reversible against a held checkpoint, and it touches only the cluster shapes the v13 forensic recovery proved were broken. A repair that is small and bounded is a repair that can be understood by an on-call engineer at three in the morning, and that is the bar production identity infrastructure has to meet, not the bar of architectural elegance.
+  </p>
+</section>
+
+
+<!-- ============================================================
+     6, ML BENCHMARK (ink)
+     ============================================================ -->
+<section class="band band--ink" data-spine="ML benchmark" data-section="ML vs heuristic">
+  <div class="eyebrow reveal">06 / ML benchmark</div>
+  <h2 class="reveal">The model learned to be the heuristic.</h2>
+
+  <p class="reveal col-with-sidenotes">
+    With the repair shipped against the bounded defect, the program turned to the question the team had wanted to ask first: whether a supervised classifier earned a role beyond Variant B. A logistic regression trained on six features from the conservative label packet achieved an AUC of 0.9996 on the held-out test set. The heuristic proxy accuracy on the identical packet was also 0.9996. The model had learned to reconstruct the heuristic precisely; it added no discriminating information of its own.
+  </p>
+
+  <p class="reveal col-with-sidenotes">
+    The more telling evaluation was against the heuristic's <span class="gloss">abstain surface<span class="gloss-tip"><b>Abstain surface</b>, the set of cases the heuristic deliberately did not decide on, either because the evidence was contradictory or because no rule produced a confident match. It is the fairest test set for a model: cases where the existing system has already declared "I do not know," and where any new information the model introduces would represent genuine value.</span></span>: the 137,698 unlabeled records the heuristic had deliberately withheld from judgment. At a probability threshold of 0.90, 81 records resolved to exactly one high-confidence candidate. The remaining 137,617 were still ambiguous or empty. The model was amplifying the same uncertainty the heuristic had already identified, not resolving it. The formal decision recorded against this evaluation was <em>ml_candidate_recapitulates_heuristic</em>.
+  </p>
+
+  <div class="figure reveal">
+    <div class="frame parallax">
+      <svg viewBox="0 0 920 320" style="width:100%;display:block;">
+        <!-- baseline -->
+        <line x1="80" y1="280" x2="880" y2="280" stroke="#222" stroke-width="1"/>
+        <!-- LEFT bar: 137,698 unresolved -->
+        <rect x="160" y="50" width="180" height="230" fill="#DBA844" fill-opacity="0.85"/>
+        <text x="250" y="42" font-family="JetBrains Mono" font-size="18" font-weight="500" fill="#FFFFFF" text-anchor="middle">137,698</text>
+        <text x="250" y="298" font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" text-anchor="middle" letter-spacing="2">ABSTAIN SURFACE</text>
+        <!-- RIGHT bar: 81 (a hair) -->
+        <rect x="600" y="278" width="180" height="2" fill="#3866A0"/>
+        <text x="690" y="42" font-family="JetBrains Mono" font-size="18" font-weight="500" fill="#3866A0" text-anchor="middle">81</text>
+        <text x="690" y="62" font-family="JetBrains Mono" font-size="10" fill="#3866A0" text-anchor="middle" letter-spacing="2">RESOLVED AT p &gt;= 0.90</text>
+        <text x="690" y="298" font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" text-anchor="middle" letter-spacing="2">ML-RESOLVED</text>
+        <!-- delta connector and label -->
+        <line x1="340" y1="50" x2="600" y2="278" stroke="#222" stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="470" y="160" font-family="JetBrains Mono" font-size="11" fill="#7A1626" text-anchor="middle" letter-spacing="2">- 137,617</text>
+        <text x="470" y="178" font-family="JetBrains Mono" font-size="9" fill="#7A1626" text-anchor="middle" letter-spacing="2">STILL UNRESOLVED</text>
+        <!-- AUC badge -->
+        <g>
+          <rect x="80" y="60" width="60" height="60" fill="none" stroke="#1A1A1A" stroke-width="1"/>
+          <text x="110" y="80" font-family="JetBrains Mono" font-size="8" fill="#A1A1A6" text-anchor="middle" letter-spacing="2">AUC</text>
+          <text x="110" y="100" font-family="Playfair Display" font-style="italic" font-size="14" font-weight="600" fill="#FFFFFF" text-anchor="middle">0.9996</text>
+          <text x="110" y="114" font-family="JetBrains Mono" font-size="7" fill="#A1A1A6" text-anchor="middle" letter-spacing="2">ML</text>
+        </g>
+        <text x="110" y="138" font-family="JetBrains Mono" font-size="7" fill="#A1A1A6" text-anchor="middle" letter-spacing="2">vs HEURISTIC 0.9996</text>
+        <text x="110" y="152" font-family="JetBrains Mono" font-size="7" fill="#7A1626" text-anchor="middle" letter-spacing="2">DELTA = 0.0000</text>
+      </svg>
+    </div>
+    <div class="cap"><span class="num">Fig. 4 . </span> The abstain-surface bake-off. Of 137,698 cases the heuristic deliberately withheld from judgment, the supervised model resolved 81 at a probability threshold of 0.90. AUC on the labeled portion was identical to the heuristic at 0.9996, and the ML candidate was formally recorded as recapitulating the heuristic.</div>
+  </div>
+
+  <div class="method reveal">
+    <div class="inner">
+      <div class="lab">What ml_recapitulates_heuristic means, and what it does not</div>
+      The model is not bad. The data is not bad. The training procedure is not bad. The decision surface the heuristic produces is the decision surface the available evidence supports, and a model trained on the same evidence retrieves the same surface. <em>Recapitulates</em> is the word the program record uses because <em>fails</em> would be wrong. The right operational consequence is to hold ML in shadow mode, where it observes production decisions and accumulates labeled disagreement cases, against a future cohort of evidence the heuristic was not trained against. Promoting the model into the decision path on this evidence would be production theater.
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     7, VERDICT (paper)
+     ============================================================ -->
+<section class="band band--paper" data-spine="Verdict" data-section="Bounded posture stands">
+  <div class="eyebrow reveal">07 / Verdict</div>
+  <h2 class="reveal">The bounded posture stands.</h2>
+
+  <p class="reveal lede">
+    Phase 12 addressed the question the program had been built to answer honestly: whether the bounded-repair posture should be displaced by a wholesale rearchitecture.
+  </p>
+
+  <p class="reveal col-with-sidenotes">
+    The architectural review defined an eleven-gate acceptance bar covering contradiction behavior under conflicting evidence, person-identifier stability across versions, deployment posture (shadow, canary, general availability), and ML safety (calibration, abstention, drift). A <span class="gloss">Mixture-of-Experts<span class="gloss-tip"><b>Mixture of Experts (MoE)</b>, an architecture pattern in which a gating network routes inputs to one of several specialized expert models. In identity resolution it would mean a router deciding, per record, which of several learned linkage strategies to apply.</span></span> rebuild proposal cleared eight of the eleven; no alternative architecture cleared all eleven against retained evidence<span class="sn"><span class="sn-num">3</span><span class="sn-body">The gates aren't trivia: contradiction behavior under conflicting evidence, PID stability across versions, deployment posture (shadow / canary / general), and ML safety (calibration, abstention, drift). A Mixture-of-Experts proposal cleared eight.</span></span>. The verdict recorded against Phase 12 was <em>bounded_posture_stands</em>: Variant B surgical repair for the static batch surface, an incremental resolution path for customer-facing identity, and ML held in shadow mode. Any future proposal to reopen the architecture requires a new validation wave against fresh evidence, not a reinterpretation of the retained record.
+  </p>
+
+  <p class="reveal">
+    The operational outcome the program produced was concrete. Core processing time fell from more than 150 hours per iteration to 24 to 36 hours, against a 17-rule architecture that had been left structurally intact. Eighty engineers across eight cross-functional squads consumed identity from the graph throughout, and the v14 checkpoint shipped on cadence with the conservative label packet, the Variant B repair, and the shadow-mode ML observer running in parallel. The most valuable artifact the program produced was a number, 0.004%, and a willingness to let that number determine whether the rest of the proposal still made sense.
+  </p>
+
+  <div class="method reveal" style="margin-top:48px;">
+    <div class="inner">
+      <div class="lab">What was learned</div>
+      Three things, all of them uncomfortable in different ways. The first is that production lore is data, and the data was wrong by three orders of magnitude. The second is that the team's instinct to rebuild was not specific to this team; it is the default instinct of anyone trained on machine-learning systems, and the brief that produced the Phase 12 verdict was not "be skeptical of ML," it was "measure first." The third is that the strongest finding of the program, that nothing major needed to be replaced, is the kind of finding that disappears from a roadmap unless it is written down. The case study you are reading is the written record.
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     BACK MATTER (dark)
+     ============================================================ -->
+<section class="band band--dark back-matter" data-spine="Sources" data-section="Sources &amp; further reading">
+
+  <div class="eyebrow reveal" style="max-width:var(--col-wide); margin:0 auto 22px; padding:0 48px;">Sources</div>
+  <h3 class="reveal">Internal artifacts referenced in this case.</h3>
+
+  <ol class="biblio reveal">
+    <li><span class="n">[01]</span><span class="ent"><i>Wave 14 Validation Packet, Conservative Label Set</i> &mdash; Spokeo Identity Platform, internal, retained evidence as of v14 checkpoint. Contains the 4.7M paired-record reference set against which the eleven-gate review was scored.</span></li>
+    <li><span class="n">[02]</span><span class="ent"><i>Phase 9 Rule-Order Recovery Memo</i> &mdash; reverse-engineered control flow for the 17-rule cascade, including the ordering of the partial-null aggregator and the conditions under which transitive closure was applied. Source of the architecture diagram in <a href="#" style="color:var(--sapphire); text-decoration:none;">section 02</a>.</span></li>
+    <li><span class="n">[03]</span><span class="ent"><i>Phase 10 Churn Measurement, v13 &rarr; v14</i> &mdash; per-rule churn instrumentation report. Establishes the 0.004% structural-churn figure and the 14.2% folk estimate it displaced.</span></li>
+    <li><span class="n">[04]</span><span class="ent"><i>Phase 11 Defect Localization, Partial-Null Bridging</i> &mdash; isolates 27 misjoined components in the static batch surface; specifies Variant A through Variant D candidate repairs and the audit criteria each was scored against.</span></li>
+    <li><span class="n">[05]</span><span class="ent"><i>Phase 11 Variant B Surgical Repair Specification</i> &mdash; the accepted patch. Includes the post-aggregation guard, the reversal procedure against retained evidence, and the zero-orphaning proof against the v14 reference set.</span></li>
+    <li><span class="n">[06]</span><span class="ent"><i>Phase 12 ML Benchmark, Shadow Wave</i> &mdash; gradient-boosted tree benchmark against the conservative label packet. Records the &asymp;94% rule-agreement rate and the calibration-abstention curves that justified the shadow-mode posting.</span></li>
+    <li><span class="n">[07]</span><span class="ent"><i>Phase 12 Architecture Review, Eleven-Gate Acceptance Bar</i> &mdash; the gate definitions (contradiction behavior, PID stability, deployment posture, ML safety) and the gate-by-gate scoring of the Mixture-of-Experts rebuild proposal that cleared eight of eleven.</span></li>
+    <li><span class="n">[08]</span><span class="ent"><i>Phase 12 Verdict, bounded_posture_stands</i> &mdash; the closing memorandum. Records the operational outcome (150+ hr &rarr; 24&ndash;36 hr per iteration), the retained 17-rule architecture, the Variant B repair, and the conditions under which the architectural question may be reopened.</span></li>
+  </ol>
+
+  <div class="eyebrow reveal" style="max-width:var(--col-wide); margin:80px auto 22px; padding:0 48px;">Related cases</div>
+  <h3 class="reveal">Other measure-first programs in the same series.</h3>
+
+  <div class="related reveal">
+    <div class="related-grid">
+      <a class="r-card" href="#">
+        <div class="eb">Case 02 / Behavioral ML</div>
+        <div class="ti">Crisis-detection thresholds, recalibrated against retained evidence.</div>
+        <div class="ds">A flagging system whose folk false-positive rate was reported at 6%. Measured against twelve weeks of held labels, the actual rate was 0.31%. The recalibration changed nothing about the model and everything about the on-call rotation.</div>
+        <div class="ar">Read &rarr;</div>
+      </a>
+      <a class="r-card" href="#">
+        <div class="eb">Case 03 / Clinical NLP</div>
+        <div class="ti">A medication-reconciliation rule set that didn't need replacing.</div>
+        <div class="ds">An 11-rule reconciler the team had pre-committed to retiring. The retire decision survived seven of eleven gates; the verdict held the rules in place and replaced only the upstream tokenizer. Same shape of finding as the Spokeo case, different surface.</div>
+        <div class="ar">Read &rarr;</div>
+      </a>
+      <a class="r-card" href="#">
+        <div class="eb">Method / Validation design</div>
+        <div class="ti">Eleven gates: how the acceptance bar was constructed.</div>
+        <div class="ds">A walk-through of the gate template used in this case and the two cases above. Why each gate is there, what evidence retires it, and the two failure modes the template is specifically designed to catch.</div>
+        <div class="ar">Read &rarr;</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="eyebrow reveal" style="max-width:var(--col-wide); margin:80px auto 22px; padding:0 48px;">Citation network</div>
+  <div class="citegraph reveal">
+    <svg viewBox="0 0 800 240" preserveAspectRatio="none" aria-hidden="true">
+      <!-- edges -->
+      <g stroke="#4D8CFF" stroke-width="1" opacity="0.55" fill="none">
+        <path d="M 80 120 L 240 60"></path>
+        <path d="M 80 120 L 240 120"></path>
+        <path d="M 80 120 L 240 180"></path>
+        <path d="M 240 60 L 400 80"></path>
+        <path d="M 240 120 L 400 80"></path>
+        <path d="M 240 120 L 400 160"></path>
+        <path d="M 240 180 L 400 160"></path>
+        <path d="M 400 80 L 560 60"></path>
+        <path d="M 400 80 L 560 130"></path>
+        <path d="M 400 160 L 560 130"></path>
+        <path d="M 400 160 L 560 200"></path>
+        <path d="M 560 60 L 720 120"></path>
+        <path d="M 560 130 L 720 120"></path>
+        <path d="M 560 200 L 720 120"></path>
+      </g>
+      <!-- nodes -->
+      <g font-family="ui-monospace, Menlo, monospace" font-size="9" fill="#E8EAED" letter-spacing="0.10em">
+        <circle cx="80"  cy="120" r="5" fill="#4D8CFF"></circle><text x="80"  y="146" text-anchor="middle">[01] WAVE 14</text>
+        <circle cx="240" cy="60"  r="4" fill="#E8EAED"></circle><text x="240" y="46"  text-anchor="middle">[02] RULE ORDER</text>
+        <circle cx="240" cy="120" r="4" fill="#E8EAED"></circle><text x="240" y="138" text-anchor="middle">[03] CHURN</text>
+        <circle cx="240" cy="180" r="4" fill="#E8EAED"></circle><text x="240" y="200" text-anchor="middle">[04] DEFECT</text>
+        <circle cx="400" cy="80"  r="4" fill="#E8EAED"></circle><text x="400" y="64"  text-anchor="middle">[05] VARIANT B</text>
+        <circle cx="400" cy="160" r="4" fill="#E8EAED"></circle><text x="400" y="180" text-anchor="middle">[06] ML BENCH</text>
+        <circle cx="560" cy="60"  r="4" fill="#E8EAED"></circle><text x="560" y="46"  text-anchor="middle">[07] 11 GATES</text>
+        <circle cx="560" cy="130" r="4" fill="#E8EAED"></circle><text x="560" y="118" text-anchor="middle">REVIEW</text>
+        <circle cx="560" cy="200" r="4" fill="#E8EAED"></circle><text x="560" y="220" text-anchor="middle">SHADOW</text>
+        <circle cx="720" cy="120" r="6" fill="#4D8CFF"></circle><text x="720" y="146" text-anchor="middle">[08] VERDICT</text>
+      </g>
+    </svg>
+    <div class="lab">Fig. C, Citation graph. Wave 14 evidence at left, the bounded_posture_stands verdict at right. Each intermediate node is an internal artifact listed above. Read left to right.</div>
+  </div>
+
+  <a class="next-chap reveal" href="#">
+    <div class="lf">
+      <div class="eb">Next chapter</div>
+      <div class="ti">Crisis-detection thresholds, recalibrated against retained evidence.</div>
+    </div>
+    <div class="rt">Read &rarr;</div>
+  </a>
+
+</section>
+
+
+<footer class="site-foot">
+  <div>(c) 2026 Dr. Heather Leffew</div>
+  <div style="display:flex;gap:24px;">
+    <a href="#">Writing</a>
+    <a href="#">LinkedIn</a>
+    <a href="#">Contact</a>
+  </div>
+</footer>
+
+
+<!-- ============================================================
+     PREVIEW DATA
+     ============================================================ -->
+<script>
+const PREVIEWS = {
+  'implicit-power-drives': {
+    eyebrow: 'Doctoral research',
+    title: 'Implicit power drives',
+    desc: 'Clinical validation framework quantifying behavioral typologies using T-tests and linguistic predictive limits in written manifestos.',
+    foot: '12 min read / Dissertation chapter',
+  },
+  'credit-fairness': {
+    eyebrow: 'Model validation',
+    title: 'Credit policy fairness',
+    desc: '100,000+ applicant simulation using SHAP to audit fairness and validate a 20.9% equitable approval shift.',
+    foot: '8 min read / Production audit',
+  },
+  'entity-resolution': {
+    eyebrow: 'Production pipeline',
+    title: 'Entity resolution pipeline',
+    desc: 'A 15-step distributed graph-ML pipeline for semantic identity fusion across 49TB of streaming vendor records.',
+    foot: '14 min read / Spokeo',
+  },
+};
+
+/* ============================================================
+   SPINE, generated from sections with [data-spine]
+   ============================================================ */
+const spine = document.getElementById('spine');
+const sections = [...document.querySelectorAll('[data-spine]')];
+sections.forEach((s, i) => {
+  const r = document.createElement('div');
+  r.className = 'row'; r.dataset.idx = i;
+  r.innerHTML = `<span class="num">${String(i+1).padStart(2,'0')}</span><span class="tick"></span><span class="label">${s.dataset.spine}</span>`;
+  r.addEventListener('click', () => s.scrollIntoView({behavior:'smooth', block:'start'}));
+  spine.appendChild(r);
+});
+
+/* ============================================================
+   SCROLL ENGINE, progress, status, mode, spine, reveals
+   ============================================================ */
+const progress = document.getElementById('progress');
+const topnav = document.getElementById('topnav');
+const status = document.getElementById('status');
+const statusSec = status.querySelector('.sec');
+const statusPct = status.querySelector('.pct');
+const atmosphere = document.querySelector('.atmosphere');
+const reveals = [...document.querySelectorAll('.reveal')];
+const spineRows = [...spine.querySelectorAll('.row')];
+
+const onScroll = () => {
+  const h = document.documentElement;
+  const y = window.scrollY;
+  const max = h.scrollHeight - window.innerHeight;
+  const p = Math.min(1, Math.max(0, y / max));
+  progress.style.setProperty('--p', (p * 100).toFixed(2) + '%');
+  statusPct.textContent = Math.round(p * 100) + '%';
+
+  // Find the section currently dominant near top of viewport
+  const trigger = window.innerHeight * 0.32;
+  let activeIdx = 0;
+  for (let i = 0; i < sections.length; i++) {
+    const r = sections[i].getBoundingClientRect();
+    if (r.top <= trigger) activeIdx = i;
+  }
+  const active = sections[activeIdx];
+  const mode = [...active.classList].find(c => c.startsWith('band--'));
+  const isPaper = mode === 'band--paper';
+
+  statusSec.textContent = active.dataset.section;
+  spineRows.forEach((row, i) => {
+    row.classList.toggle('is-active', i === activeIdx);
+    row.classList.toggle('is-paper-active', i === activeIdx && isPaper);
+  });
+
+  topnav.classList.toggle('is-paper', isPaper);
+  status.classList.toggle('is-paper', isPaper);
+  spine.classList.toggle('is-paper', isPaper);
+
+  // Reveals
+  reveals.forEach(el => {
+    const r = el.getBoundingClientRect();
+    if (r.top < window.innerHeight * 0.92) el.classList.add('is-on');
+  });
+
+  // Parallax on figures (subtle)
+  document.querySelectorAll('.parallax').forEach(el => {
+    const r = el.getBoundingClientRect();
+    const center = r.top + r.height / 2 - window.innerHeight / 2;
+    el.style.transform = `translate3d(0, ${(-center * 0.04).toFixed(1)}px, 0)`;
+  });
+};
+window.addEventListener('scroll', onScroll, { passive:true });
+window.addEventListener('resize', onScroll);
+onScroll();
+
+/* ============================================================
+   HOVER PREVIEWS
+   ============================================================ */
+const hp = document.getElementById('hover-preview');
+const hpEb = hp.querySelector('.h-eb');
+const hpTi = hp.querySelector('.h-t');
+const hpDs = hp.querySelector('.h-d');
+const hpFt = hp.querySelector('.h-ft');
+let hpTimer;
+document.querySelectorAll('.xlink').forEach(a => {
+  a.addEventListener('mouseenter', e => {
+    const id = a.dataset.previewId;
+    if (!id || !PREVIEWS[id]) return;
+    const d = PREVIEWS[id];
+    hpEb.textContent = d.eyebrow;
+    hpTi.textContent = d.title;
+    hpDs.textContent = d.desc;
+    hpFt.textContent = d.foot;
+    // Position
+    const r = a.getBoundingClientRect();
+    let x = r.left;
+    let y = r.bottom + 12;
+    const w = 340, h = 180;
+    if (x + w > window.innerWidth - 16) x = window.innerWidth - w - 16;
+    if (y + h > window.innerHeight - 16) y = r.top - h - 12;
+    hp.style.left = x + 'px';
+    hp.style.top  = y + 'px';
+    // Sync mode of the preview to the section the link sits in
+    const inPaper = a.closest('.band--paper') !== null;
+    hp.classList.toggle('is-paper', inPaper);
+    clearTimeout(hpTimer);
+    hp.classList.add('is-on');
+  });
+  a.addEventListener('mouseleave', () => {
+    hpTimer = setTimeout(() => hp.classList.remove('is-on'), 80);
+  });
+});
+
+/* ============================================================
+   SIDENOTES
+   - Wide viewport: position each .sn-body in the right gutter,
+     vertically aligned with its inline .sn-num marker.
+   - Narrow viewport: tap to toggle inline footnote.
+   ============================================================ */
+function layoutSidenotes() {
+  if (window.innerWidth < 1080) return;
+  document.querySelectorAll('p.col-with-sidenotes').forEach(p => {
+    const pRect = p.getBoundingClientRect();
+    let lastBottom = -9999;
+    p.querySelectorAll('.sn').forEach(sn => {
+      const num = sn.querySelector('.sn-num');
+      const body = sn.querySelector('.sn-body');
+      if (!num || !body) return;
+      const numRect = num.getBoundingClientRect();
+      // top relative to paragraph
+      let top = numRect.top - pRect.top - 2;
+      // avoid stacking, push down if previous note's bottom would overlap
+      if (top < lastBottom + 12) top = lastBottom + 12;
+      body.style.top = top + 'px';
+      // remember bottom (estimate height: 240px wide, lh ~1.55, ~13.5px -> ~3 lines avg)
+      const bodyH = body.offsetHeight || 80;
+      lastBottom = top + bodyH;
+    });
+  });
+}
+window.addEventListener('load', layoutSidenotes);
+window.addEventListener('resize', layoutSidenotes);
+// Also re-layout after fonts settle
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(layoutSidenotes);
+
+document.querySelectorAll('.sn-num').forEach(n => {
+  n.addEventListener('click', () => {
+    if (window.innerWidth >= 1080) return;
+    const body = n.parentElement.querySelector('.sn-body');
+    if (body) body.classList.toggle('is-open');
+  });
+});
+</script>
+
+
+<script>
+/* ============================================================
+   DYNAMIC SIDENOTE CLEARANCE (Global Portfolio Mandate)
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    const sidenoteParagraphs = document.querySelectorAll('.col-with-sidenotes');
+    sidenoteParagraphs.forEach(p => {
+        const sn = p.querySelector('.sn');
+        if (sn) {
+            const updateHeight = () => {
+                if (window.innerWidth >= 1240) {
+                    // Calculate exact clearance needed based on the sidenote's absolute top position
+                    const neededHeight = sn.offsetTop + sn.offsetHeight + 40;
+                    p.style.minHeight = neededHeight + 'px';
+                } else {
+                    p.style.minHeight = 'auto';
+                }
+            };
+            updateHeight();
+            setTimeout(updateHeight, 250);
+            window.addEventListener('resize', updateHeight);
+        }
+    });
+});
+</script>
+
+</body>
+</html>

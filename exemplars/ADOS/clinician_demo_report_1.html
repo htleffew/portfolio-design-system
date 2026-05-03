@@ -1,0 +1,761 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Assessment Report - PART_0012</title>
+    <style>
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header .participant-info {
+            font-size: 18px;
+            opacity: 0.95;
+            margin: 8px 0;
+        }
+
+        .section {
+            padding: 32px 40px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .section:last-child { border-bottom: none; }
+
+        .section h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert {
+            padding: 24px;
+            margin: 24px 0;
+            border-radius: 12px;
+            border: 1px solid;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .alert::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: currentColor;
+            opacity: 0.3;
+        }
+
+        .alert h3 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .alert p { margin: 12px 0; }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+
+        .alert-moderate {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-color: #fd7e14;
+            color: #856404;
+        }
+
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .model-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            transition: transform 0.2s ease;
+        }
+
+        .model-card:hover { transform: translateY(-2px); }
+
+        .model-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .model-card .label {
+            font-size: 14px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .ados-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          margin: 24px 0;
+        }
+
+        .ados-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 6px solid;
+        }
+
+        .ados-item.score-0 { border-left-color: #28a745; }
+        .ados-item.score-1 { border-left-color: #ffc107; }
+        .ados-item.score-2 { border-left-color: #dc3545; }
+
+        .ados-score {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            color: white;
+            font-weight: 700;
+            font-size: 18px;
+            margin-right: 16px;
+        }
+
+        .ados-score.score-0 { background: #28a745; }
+        .ados-score.score-1 { background: #ffc107; }
+        .ados-score.score-2 { background: #dc3545; }
+
+        .ados-details h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .ados-details .behavior {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 8px;
+        }
+
+        .ados-details .explanation {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #495057;
+        }
+
+        .findings-section {
+            margin: 24px 0;
+        }
+
+        .findings-category {
+            margin: 32px 0;
+        }
+
+        .findings-category h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .finding-item {
+            background: white;
+            padding: 16px 20px;
+            margin: 12px 0;
+            border-radius: 8px;
+            border-left: 4px solid;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .finding-item.concern { border-left-color: #dc3545; }
+        .finding-item.strength { border-left-color: #28a745; }
+        .finding-item.neutral { border-left-color: #6c757d; }
+
+        .finding-header {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .finding-details {
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .recommendations-list {
+            list-style: none;
+            padding: 0;
+            counter-reset: rec-counter;
+        }
+
+        .recommendations-list li {
+            counter-increment: rec-counter;
+            background: #f8f9fa;
+            margin: 16px 0;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #007bff;
+            position: relative;
+            padding-left: 60px;
+        }
+
+        .recommendations-list li::before {
+            content: counter(rec-counter);
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            background: #007bff;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .technical-details {
+            background: #f1f3f4;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 16px 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .technical-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .technical-item {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .technical-item h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 24px 40px;
+            text-align: center;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .footer p {
+            margin: 8px 0;
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .confidence-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .confidence-high {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .confidence-moderate {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .confidence-low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { border-radius: 8px; }
+            .header, .section { padding: 20px; }
+            .model-grid, .ados-grid { grid-template-columns: 1fr; }
+        }
+        
+    
+/* ============================================================
+   MASTER GRID & PORTRAIT MODE POLISH
+   ============================================================ */
+:root { --grid-left: max(32px, calc(50vw - 540px)); }
+@media (min-width: 1360px) { :root { --grid-left: max(260px, calc(50vw - 540px)); } }
+
+@media (min-width: 1240px) {
+  section.band:not(.front) {
+    display: grid;
+    grid-template-columns: var(--grid-left) 680px 400px minmax(16px, 1fr);
+    align-items: start;
+  }
+  section.band:not(.front) > * {
+    grid-column: 2 / 3;
+    margin-left: 0 !important; 
+    margin-right: 0 !important;
+  }
+  section.band:not(.front) > .col-wide, 
+  section.band:not(.front) > .stat-grid, 
+  section.band:not(.front) > .figure, 
+  section.band:not(.front) > .report-prose {
+    grid-column: 2 / 4;
+    width: 100%; 
+    max-width: none;
+  }
+  .stat-grid { justify-content: start !important; }
+}
+
+@media (min-width: 1180px) and (max-width: 1359px) {
+  #spine {
+    width: 44px; overflow: hidden; white-space: nowrap;
+    transition: width 0.4s cubic-bezier(0.16,1,0.3,1), background 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+  #spine:hover { width: 250px; }
+}
+@media (min-width: 1360px) {
+  #spine { width: auto; overflow: visible; }
+}
+
+/* Portrait Mode Space Fix */
+.front { min-height: clamp(400px, 80vh, 850px) !important; justify-content: center !important; }
+
+</style>
+</head>
+<body>
+    <div class="container">
+        
+        <div class="header">
+            <h1>🏥 Clinical Assessment Report</h1>
+            <div class="participant-info">
+                <div><strong>Participant:</strong> PART_0012</div>
+                <div><strong>Age:</strong> 100 months (7-8 years) | <strong>Sex:</strong> M</div>
+                <div><strong>Assessment Date:</strong> 2024-06-10 | <strong>Report Generated:</strong> June 07, 2025</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="alert alert-success">
+                <h3>🟢 Assessment Summary</h3>
+                <p><strong>AI-Assisted ASD Risk Level:</strong> LOW</p>
+                <p><strong>Consensus Probability:</strong> 2.9%</p>
+                <p><strong>Assessment Confidence:</strong>
+                    <span class="confidence-badge confidence-high">
+                        ✓ High confidence in assessment
+                    </span>
+                </p>
+                <p><strong>ADOS-2 Algorithm Score:</strong> 3/18 (Minimal Concern)</p>
+                <p><strong>Clinical Assessment:</strong> The AI system's comprehensive analysis of participant PART_0012 indicates behaviors predominantly within typical developmental ranges. This assessment is based on automated behavioral feature extraction and analysis of multiple domains including: Close Visual Inspection Duration, Functional Play Percentage, Gaze to Face Percentage, Hand Flapping Duration, Joint Attention Bids, Mutual Gaze Episodes, Phrase Repetition Rate, Response to Name Latency, Social Smiles Count, and Spontaneous Vocalizations. The evaluation represents a consensus derived from multiple machine learning models trained on validated clinical datasets.</p>
+                <p><strong>Risk Stratification:</strong> Behaviors primarily within typical ranges; routine screening recommended</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🤖 AI Model Predictions</h2>
+            <p>Probability estimates from multiple machine learning approaches:</p>
+            <div class="model-grid">
+                <div class="model-card">
+                    <div class="value">1.1%</div>
+                    <div class="label">Random Forest</div>
+                </div>
+                <div class="model-card">
+                    <div class="value">3.9%</div>
+                    <div class="label">Xgboost</div>
+                </div>
+                <div class="model-card">
+                    <div class="value">8.7%</div>
+                    <div class="label">Logistic Regression</div>
+                </div>
+                <div class="model-card">
+                    <div class="value">2.0%</div>
+                    <div class="label">Semi Self Training</div>
+                </div>
+                <div class="model-card">
+                    <div class="value">2.5%</div>
+                    <div class="label">Semi Label Spreading</div>
+                </div>
+                <div class="model-card">
+                    <div class="value">1.1%</div>
+                    <div class="label">Bayesian Ensemble</div>
+                </div>
+                <div class="model-card">
+                    <div class="value">0.0%</div>
+                    <div class="label">Bayesian Calibrated</div>
+                </div>
+                <div class="model-card">
+                    <div class="value">3.7%</div>
+                    <div class="label">Late Fusion</div>
+                </div></div>
+            
+            
+                <div class="alert alert-info" style="margin-top: 20px;">
+                    <h4>🔍 Uncertainty Analysis</h4>
+                    <p><strong>Bayesian Model Uncertainty:</strong> 0.003</p>
+                    <p>Lower uncertainty indicates clearer behavioral pattern</p>
+                </div>
+        </div>
+        
+        <div class="section">
+            <h2>📊 ADOS-2 Algorithm Assessment</h2>
+            <p>Automated scoring based on validated behavioral markers and clinical thresholds:</p>
+            <div class="ados-grid"><h3>Social Communication (Score: 2)</h3>
+                    <div class="ados-item score-0">
+                        <div style="display: flex; align-items: flex-start;">
+                            <div class="ados-score score-0">A1</div>
+                            <div class="ados-details">
+                                <h4>Eye Contact & Facial Expression</h4>
+                                <div class="behavior">Assesses quality and frequency of eye contact during social interactions</div>
+                                <div class="explanation">Eye contact patterns within typical range (Gaze: 74.7%, Episodes: 40)</div>
+                                <div style="margin-top: 8px; font-style: italic; color: #6c757d; font-size: 13px;">
+                                    Good eye contact quality and frequency observed
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ados-item score-0">
+                        <div style="display: flex; align-items: flex-start;">
+                            <div class="ados-score score-0">A2</div>
+                            <div class="ados-details">
+                                <h4>Facial Expressions & Social Smiling</h4>
+                                <div class="behavior">Evaluates spontaneous facial expressions directed toward others</div>
+                                <div class="explanation">Appropriate social smiling (28 instances)</div>
+                                <div style="margin-top: 8px; font-style: italic; color: #6c757d; font-size: 13px;">
+                                    Good range of facial expressions in social contexts
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ados-item score-1">
+                        <div style="display: flex; align-items: flex-start;">
+                            <div class="ados-score score-1">A4</div>
+                            <div class="ados-details">
+                                <h4>Response to Name</h4>
+                                <div class="behavior">Measures responsiveness when name is called in natural context</div>
+                                <div class="explanation">Mild concern assigned due to missing data for: Response to Name Latency</div>
+                                <div style="margin-top: 8px; font-style: italic; color: #6c757d; font-size: 13px;">
+                                    Data quality may limit interpretation of this domain
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ados-item score-1">
+                        <div style="display: flex; align-items: flex-start;">
+                            <div class="ados-score score-1">A7</div>
+                            <div class="ados-details">
+                                <h4>Joint Attention & Pointing</h4>
+                                <div class="behavior">Assesses initiation of joint attention and pointing behaviors</div>
+                                <div class="explanation">Limited joint attention attempts (5 observed)</div>
+                                <div style="margin-top: 8px; font-style: italic; color: #6c757d; font-size: 13px;">
+                                    Some joint attention present but infrequent
+                                </div>
+                            </div>
+                        </div>
+                    </div><h3>Communication (Score: 1)</h3>
+                    <div class="ados-item score-1">
+                        <div style="display: flex; align-items: flex-start;">
+                            <div class="ados-score score-1">B1</div>
+                            <div class="ados-details">
+                                <h4>Frequency of Spontaneous Vocalizations</h4>
+                                <div class="behavior">Evaluates overall frequency and spontaneity of vocal communication</div>
+                                <div class="explanation">Reduced vocal output (24 instances)</div>
+                                <div style="margin-top: 8px; font-style: italic; color: #6c757d; font-size: 13px;">
+                                    Some vocalization but may lack spontaneity
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ados-item score-0">
+                        <div style="display: flex; align-items: flex-start;">
+                            <div class="ados-score score-0">B2</div>
+                            <div class="ados-details">
+                                <h4>Stereotyped/Repetitive Language</h4>
+                                <div class="behavior">Identifies repetitive or stereotyped use of language</div>
+                                <div class="explanation">Minimal repetitive language (Rate: 0.009)</div>
+                                <div style="margin-top: 8px; font-style: italic; color: #6c757d; font-size: 13px;">
+                                    Language use appears flexible and contextual
+                                </div>
+                            </div>
+                        </div>
+                    </div><h3>Play & Imagination (Score: 0)</h3>
+                    <div class="ados-item score-0">
+                        <div style="display: flex; align-items: flex-start;">
+                            <div class="ados-score score-0">C1</div>
+                            <div class="ados-details">
+                                <h4>Functional Play with Objects</h4>
+                                <div class="behavior">Assesses appropriate, functional use of toys and objects</div>
+                                <div class="explanation">Good functional play skills (100.0%)</div>
+                                <div style="margin-top: 8px; font-style: italic; color: #6c757d; font-size: 13px;">
+                                    Appropriate and creative use of toys and materials
+                                </div>
+                            </div>
+                        </div>
+                    </div><h3>Repetitive Behaviors (Score: 0)</h3>
+                    <div class="ados-item score-0">
+                        <div style="display: flex; align-items: flex-start;">
+                            <div class="ados-score score-0">D1</div>
+                            <div class="ados-details">
+                                <h4>Hand & Finger Mannerisms</h4>
+                                <div class="behavior">Documents repetitive hand/finger movements and mannerisms</div>
+                                <div class="explanation">Minimal hand mannerisms (1.0s)</div>
+                                <div style="margin-top: 8px; font-style: italic; color: #6c757d; font-size: 13px;">
+                                    No significant repetitive hand movements observed
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ados-item score-0">
+                        <div style="display: flex; align-items: flex-start;">
+                            <div class="ados-score score-0">D4</div>
+                            <div class="ados-details">
+                                <h4>Sensory Interests & Inspection</h4>
+                                <div class="behavior">Evaluates unusual sensory interests and inspection behaviors</div>
+                                <div class="explanation">Typical sensory exploration (0.4s)</div>
+                                <div style="margin-top: 8px; font-style: italic; color: #6c757d; font-size: 13px;">
+                                    Appropriate sensory interest in environment
+                                </div>
+                            </div>
+                        </div>
+                    </div></div>
+            
+        <div class="alert alert-info" style="margin-top: 24px;">
+            <h4>Clinical Interpretation</h4>
+            <p><strong>Overall Severity:</strong> Minimal Concern - Behaviors largely within typical developmental expectations</p>
+            <p>Profile suggests typical development with minimal areas of concern</p>
+        </div>
+            <p style="margin-top: 16px; font-size: 14px; color: #6c757d;">
+                <strong>Scoring Key:</strong> 0 = Little to No Evidence | 1 = Mild Evidence | 2 = Clear Evidence
+            </p>
+        </div>
+        
+        <div class="section">
+            <h2>🔍 Clinical Findings</h2>
+            <p>Detailed behavioral analysis relative to validated reference groups:</p>
+            <div class="findings-section">
+                <div class="findings-category">
+                <h3>🚩 Areas Requiring Clinical Attention</h3>
+                <div class="finding-item concern">
+                    <div class="finding-header">Joint Attention Bids: 5</div>
+                    <div class="finding-details">
+                        Below typical developmental expectations (Typical: 9, ASD: 6)
+                    </div>
+                </div>
+                <div class="finding-item concern">
+                    <div class="finding-header">Spontaneous Vocalizations: 24</div>
+                    <div class="finding-details">
+                        Below typical developmental expectations (Typical: 36, ASD: 29)
+                    </div>
+                </div></div>
+                <div class="findings-category">
+                <h3>💪 Strengths and Positive Indicators</h3>
+                <div class="finding-item strength">
+                    <div class="finding-header">Gaze to Face Percentage: 74.7%</div>
+                    <div class="finding-details">
+                        Within typical developmental range (Typical: 67.6%, ASD: 52.6%)
+                    </div>
+                </div>
+                <div class="finding-item strength">
+                    <div class="finding-header">Mutual Gaze Episodes: 40</div>
+                    <div class="finding-details">
+                        Within typical developmental range (Typical: 63, ASD: 53)
+                    </div>
+                </div>
+                <div class="finding-item strength">
+                    <div class="finding-header">Social Smiles Count: 28</div>
+                    <div class="finding-details">
+                        Within typical developmental range (Typical: 19, ASD: 14)
+                    </div>
+                </div>
+                <div class="finding-item strength">
+                    <div class="finding-header">Phrase Repetition Rate: 0.009</div>
+                    <div class="finding-details">
+                        Within typical developmental range (Typical: 0.030, ASD: 0.138)
+                    </div>
+                </div>
+                <div class="finding-item strength">
+                    <div class="finding-header">Hand Flapping Duration: 1.0s</div>
+                    <div class="finding-details">
+                        Within typical developmental range (Typical: 2.5s, ASD: 7.4s)
+                    </div>
+                </div>
+                <div class="finding-item strength">
+                    <div class="finding-header">Functional Play Percentage: 100.0%</div>
+                    <div class="finding-details">
+                        Within typical developmental range (Typical: 74.7%, ASD: 63.7%)
+                    </div>
+                </div>
+                <div class="finding-item strength">
+                    <div class="finding-header">Close Visual Inspection Duration: 0.4s</div>
+                    <div class="finding-details">
+                        Within typical developmental range (Typical: 4.8s, ASD: 12.7s)
+                    </div>
+                </div></div>
+                <div class="findings-category">
+                <h3>ℹ️ Data Limitations</h3>
+                <div class="finding-item neutral">
+                    <div class="finding-header">Response to Name Latency</div>
+                    <div class="finding-details">Unable to assess this behavioral domain</div>
+                </div></div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📋 Clinical Recommendations</h2>
+            <ul class="recommendations-list"><li>Continue routine developmental surveillance per standard pediatric guidelines</li><li>Monitor typical developmental milestones</li><li>Seek consultation if new behavioral concerns emerge</li></ul>
+            
+            <div class="alert alert-info" style="margin-top: 24px;">
+                <h4>🎯 Assessment Considerations</h4>
+                <p>Bayesian model uncertainty estimate: 0.003 Lower uncertainty suggests clearer behavioral pattern relative to training data</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🔧 Technical Assessment Details</h2>
+            <p>Feature extraction quality and technical metrics:</p>
+            <div class="technical-grid">
+        <div class="technical-item">
+            <h4>Session Quality Metrics</h4>
+            <p>Overall Quality: 79.4%</p>
+            <p>Video Clarity: 68.2%</p>
+            <p>Audio Clarity: 85.4%</p>
+            <p>Completeness: 91.6%</p>
+        </div>
+            <div class="technical-item">
+                <h4>Video Analysis</h4>
+                <p>Face Detection: 72.2%</p>
+                <p>Gaze Events: 45</p>
+                <p>Within Realistic Limits: Yes</p>
+            </div>
+            <div class="technical-item">
+                <h4>Audio Analysis</h4>
+                <p>Vocalizations: 38</p>
+                <p>Response Rate: 50.1%</p>
+                <p>Response Trials: 6</p>
+            </div></div>
+            <div class="technical-details">
+                <p><strong>Analysis Methods:</strong> Automated behavioral feature extraction using computer vision and speech analysis</p>
+                <p><strong>Data Processing:</strong> Standardized feature scaling and imputation for missing values</p>
+                <p><strong>Model Ensemble:</strong> Consensus from multiple validated machine learning approaches</p>
+                <p><strong>Temporal Analysis:</strong> Not available in current implementation</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>⚠️ Important Clinical Notice</strong></p>
+            <p>This AI-assisted assessment supports clinical decision-making and must be interpreted by qualified professionals.
+               It should be integrated with comprehensive evaluation including direct observation, parent/caregiver interviews,
+               developmental history, and other standardized assessments.</p>
+            <p><strong>This system's output is not a diagnosis and does not replace professional clinical judgment.</strong></p>
+            <p style="margin-top: 16px; font-size: 12px;">
+                Generated by Clinical AI Assessment System | Report Version 3.0 |
+                For technical support or questions about this assessment, consult with your clinical team.
+            </p>
+        </div>
+    </div>
+
+<script>
+/* ============================================================
+   DYNAMIC SIDENOTE CLEARANCE (Global Portfolio Mandate)
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    const sidenoteParagraphs = document.querySelectorAll('.col-with-sidenotes');
+    sidenoteParagraphs.forEach(p => {
+        const sn = p.querySelector('.sn');
+        if (sn) {
+            const updateHeight = () => {
+                if (window.innerWidth >= 1240) {
+                    // Calculate exact clearance needed based on the sidenote's absolute top position
+                    const neededHeight = sn.offsetTop + sn.offsetHeight + 40;
+                    p.style.minHeight = neededHeight + 'px';
+                } else {
+                    p.style.minHeight = 'auto';
+                }
+            };
+            updateHeight();
+            setTimeout(updateHeight, 250);
+            window.addEventListener('resize', updateHeight);
+        }
+    });
+});
+</script>
+
+</body>
+</html>

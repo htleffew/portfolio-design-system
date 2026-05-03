@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research Index | Dr. Heather Leffew</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --obsidian: #030303;--charcoal: #1A1A1A;--brushed: #333333;
+  --platinum: #F5F5F7;--tungsten: #A1A1A6;--flare: #FFFFFF;
+  --sapphire-deep: #0F52BA;--sapphire: #4D8CFF;
+  --ruby-deep: #9B111E;--ruby: #E0115F;
+  --emerald-deep: #097969;--emerald: #50C878;
+  --citrine-deep: #B8A200;--citrine: #E4D00A;
+}
+::selection{background-color:rgba(255,255,255,0.2);color:#FFFFFF}
+html{scroll-behavior:auto}
+body{background:var(--obsidian);color:var(--platinum);font-family:'Lora',serif;overflow-x:hidden;cursor:auto;min-height:100vh;display:flex;flex-direction:column}
+
+#bootOverlay{position:fixed;inset:0;z-index:9999;background:#000000}
+#glCanvas{position:fixed;inset:0;z-index:-30;pointer-events:none;border:none;outline:none;background:var(--obsidian)}
+#cursorHalo{position:fixed;width:200px;height:200px;border-radius:50%;mix-blend-mode:screen;background:radial-gradient(circle,rgba(255,255,255,0.06) 0%,rgba(77,140,255,0.03) 40%,transparent 70%);pointer-events:none;z-index:5}
+
+/* GLOBAL NAV */
+.global-nav { position: fixed; top: 0; left: 0; right: 0; height: 72px; padding: 0 48px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; background: linear-gradient(to bottom, rgba(3,3,3,0.95), transparent); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,255,255,0.05); transform: translateY(-100%); animation: navSlideIn 0.8s 0.5s forwards ease-out; }
+@keyframes navSlideIn { to { transform: translateY(0); } }
+.nav-brand { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--flare); text-decoration: none; font-weight: 600; letter-spacing: 0.05em; margin: 0; padding: 0;}
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-link { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; color: var(--tungsten); text-decoration: none; letter-spacing: 0.1em; transition: color 0.3s; }
+.nav-link:hover { color: var(--sapphire); }
+.nav-link.btn-back { display: flex; align-items: center; gap: 8px; color: var(--flare); border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 4px; transition: all 0.3s; }
+.nav-link.btn-back:hover { background: var(--flare); color: var(--obsidian); }
+
+/* HERO */
+.hero-section{position:relative;padding:140px 48px 60px 48px;z-index:10;max-width:1000px;margin:0 auto;text-align:center}
+#heroEyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.35em;text-transform:uppercase;color:var(--sapphire);margin-bottom:20px}
+#heroTitle{font-family:'Playfair Display',serif;font-size:clamp(36px,4.5vw,56px);font-weight:600;letter-spacing:-0.015em;line-height:1.18;color:var(--flare);margin-bottom:16px}
+#heroSubtitle{font-family:'Lora',serif;font-size:16px;line-height:1.85;color:var(--tungsten);max-width:700px;margin:0 auto}
+
+/* SEARCH & FILTERS */
+.filter-bar{position:sticky;top:72px;z-index:100;background:rgba(3,3,3,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(51,51,51,0.5);padding:24px 48px;display:flex;flex-direction:column;gap:20px;max-width:1000px;margin:0 auto;width:100%}
+.search-wrap{position:relative;width:100%}
+.search-input{width:100%;background:rgba(26,26,26,0.6);border:1px solid rgba(255,255,255,0.1);color:var(--flare);font-family:'JetBrains Mono',monospace;font-size:14px;padding:16px 24px;border-radius:8px;outline:none;transition:border-color 0.3s}
+.search-input:focus{border-color:var(--sapphire)}
+.search-input::placeholder{color:rgba(161,161,166,0.5)}
+
+.tags-wrap{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.f-tag{background:transparent;border:1px dashed rgba(255,255,255,0.2);color:var(--tungsten);font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;padding:8px 16px;border-radius:20px;cursor:pointer;transition:all 0.3s}
+.f-tag:hover{border-color:rgba(255,255,255,0.4);color:var(--platinum)}
+.f-tag.active{background:var(--sapphire);border-color:var(--sapphire);color:var(--obsidian);font-weight:700;border-style:solid}
+
+/* FEED */
+.feed-wrap{max-width:800px;margin:60px auto 120px auto;padding:0 24px;flex-grow:1;width:100%;z-index:10;position:relative}
+.no-results{display:none;text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tungsten);padding:60px 0}
+
+/* ARTICLE CARD */
+.article-card{display:flex;flex-direction:column;padding:32px 0;border-bottom:1px solid rgba(51,51,51,0.4);text-decoration:none;transition:transform 0.4s;opacity:0;transform:translateY(20px)}
+.article-card:hover .art-title{color:var(--sapphire)}
+.art-meta{display:flex;align-items:center;gap:16px;margin-bottom:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tungsten);text-transform:uppercase;letter-spacing:0.1em}
+.art-cat{color:var(--sapphire);border:1px solid rgba(77,140,255,0.3);padding:4px 8px;border-radius:4px;background:rgba(77,140,255,0.05)}
+.art-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:600;color:var(--flare);line-height:1.2;margin-bottom:12px;transition:color 0.3s}
+.art-desc{font-family:'Lora',serif;font-size:15px;line-height:1.7;color:var(--tungsten);margin-bottom:16px}
+.art-link{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--platinum);text-transform:uppercase;letter-spacing:0.1em;display:flex;align-items:center;gap:8px}
+
+.global-footer { border-top: 1px solid rgba(255,255,255,0.05); padding: 60px 48px; display: flex; justify-content: space-between; align-items: center; background: rgba(3,3,3,0.3); z-index: 10; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--tungsten); letter-spacing: 0.1em; text-transform: uppercase; }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a { color: var(--tungsten); text-decoration: none; transition: color 0.3s; }
+.footer-links a:hover { color: var(--flare); }
+
+@media(max-width:768px){ .filter-bar{padding:16px 24px;} .hero-section{padding-top:100px;} .art-title{font-size:22px;} }
+
+/* ============================================================
+   MASTER GRID & PORTRAIT MODE POLISH
+   ============================================================ */
+:root { --grid-left: max(32px, calc(50vw - 540px)); }
+@media (min-width: 1360px) { :root { --grid-left: max(260px, calc(50vw - 540px)); } }
+
+@media (min-width: 1240px) {
+  section.band:not(.front) {
+    display: grid;
+    grid-template-columns: var(--grid-left) 680px 400px minmax(16px, 1fr);
+    align-items: start;
+  }
+  section.band:not(.front) > * {
+    grid-column: 2 / 3;
+    margin-left: 0 !important; 
+    margin-right: 0 !important;
+  }
+  section.band:not(.front) > .col-wide, 
+  section.band:not(.front) > .stat-grid, 
+  section.band:not(.front) > .figure, 
+  section.band:not(.front) > .report-prose {
+    grid-column: 2 / 4;
+    width: 100%; 
+    max-width: none;
+  }
+  .stat-grid { justify-content: start !important; }
+}
+
+@media (min-width: 1180px) and (max-width: 1359px) {
+  #spine {
+    width: 44px; overflow: hidden; white-space: nowrap;
+    transition: width 0.4s cubic-bezier(0.16,1,0.3,1), background 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+  #spine:hover { width: 250px; }
+}
+@media (min-width: 1360px) {
+  #spine { width: auto; overflow: visible; }
+}
+
+/* Portrait Mode Space Fix */
+.front { min-height: clamp(400px, 80vh, 850px) !important; justify-content: center !important; }
+
+</style>
+</head>
+<body>
+
+<div id="bootOverlay"></div>
+<canvas id="glCanvas"></canvas>
+<div id="cursorHalo"></div>
+
+<!-- GLOBAL NAV -->
+<header class="global-nav">
+  <a href="index.html" class="nav-brand">Dr. Heather Leffew</a>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link btn-back"><span>&larr;</span> Executive Profile</a>
+  </div>
+</header>
+
+<section class="hero-section">
+  <div id="heroEyebrow">Methodology &amp; Documentation</div>
+  <h1 id="heroTitle">Research Publication Index</h1>
+  <p id="heroSubtitle">A searchable repository of clinical case studies, infrastructural pipelines, and machine learning deployments.</p>
+</section>
+
+<div class="filter-bar">
+  <div class="search-wrap">
+    <input type="text" id="searchInput" class="search-input" placeholder="Search architecture, algorithms, clinical concepts...">
+  </div>
+  <div class="tags-wrap" id="tagContainer">
+    <button class="f-tag active" data-filter="All">All Research</button>
+    <button class="f-tag" data-filter="Graph ML & Identity">Graph ML & Identity</button>
+    <button class="f-tag" data-filter="Predictive ML">Predictive ML</button>
+    <button class="f-tag" data-filter="NLP & LLMs">NLP & LLMs</button>
+    <button class="f-tag" data-filter="Reinforcement Learning">Reinforcement Learning</button>
+    <button class="f-tag" data-filter="Causal Inference">Causal Inference</button>
+    <button class="f-tag" data-filter="Platform Integrity">Platform Integrity</button>
+    <button class="f-tag" data-filter="Clinical & Behavioral">Clinical & Behavioral</button>
+  </div>
+</div>
+
+<main class="feed-wrap" id="feedWrap">
+  <div class="no-results" id="noResults">0 Publications match the current filtration topology.</div>
+  <!-- Articles injected via JS -->
+</main>
+
+<footer class="global-footer">
+  <div class="footer-copy">&copy; 2026 Dr. Heather Leffew. All Rights Reserved.</div>
+  <div class="footer-links">
+    <a href="https://linkedin.com/in/heathertleffew" target="_blank">LinkedIn</a>
+  </div>
+</footer>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+const lenis = new Lenis({ duration: 1.6, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smoothWheel: true });
+lenis.on('scroll', ScrollTrigger.update);
+gsap.ticker.add((time) => lenis.raf(time * 1000));
+gsap.ticker.lagSmoothing(0);
+
+(function initWebGL() {
+  const canvas = document.getElementById('glCanvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 0, 16);
+  
+  const geo = new THREE.IcosahedronGeometry(12, 2);
+  const mat = new THREE.MeshBasicMaterial({ color: 0x4D8CFF, wireframe: true, transparent: true, opacity: 0.04 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(10, 0, -15);
+  scene.add(mesh);
+  
+  function animate() {
+    requestAnimationFrame(animate);
+    mesh.rotation.y += 0.0005;
+    mesh.rotation.x += 0.0002;
+    renderer.render(scene, camera);
+  }
+  animate();
+})();
+
+const halo = document.getElementById('cursorHalo');
+let mx = 0, my = 0, hx = 0, hy = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+(function tick(){
+  hx += (mx - hx) * 0.08; hy += (my - hy) * 0.08;
+  halo.style.left = (hx - 100) + 'px';
+  halo.style.top  = (hy - 100) + 'px';
+  requestAnimationFrame(tick);
+})();
+
+// PROJECT REPOSITORY ENGINE
+const projects = [
+    { cat: "Graph ML & Identity", title: "Enterprise Identity Pipeline", desc: "Data orchestration connecting multi-vendor inputs. Replaced ad-hoc record linkage with a systematic pipeline mapping ~49TB of graph intelligence.", url: "entity-resolution-pipeline.html", time: "5 min read" },
+    { cat: "Predictive ML", title: "Ordinal Learning to Rank", desc: "Migrating binary linkage classifiers to deep ordinal relevance mapping via Airflow and PySpark orchestration.", url: "learning-to-rank-ordinal.html", time: "4 min read" },
+    { cat: "Predictive ML", title: "Sales Account Prioritization", desc: "Quantifying B2B lead probability using scalable XGBoost and LightGBM models mapped directly to revenue.", url: "account-prioritization.html", time: "6 min read" },
+    { cat: "Predictive ML", title: "Predicting Buyer Intent", desc: "A predictive framework that analyzes historical metadata using XGBoost on Hive and Amazon SageMaker.", url: "predicting-buyer-intent.html", time: "7 min read" },
+    { cat: "Graph ML & Identity", title: "Identity Link Quality Constraints", desc: "Establishing strict quality thresholds for multi-vendor linkage confidence, overriding standard probabilistic models.", url: "identity-link-quality.html", time: "4 min read" },
+    { cat: "Reinforcement Learning", title: "Agentic Search Routing", desc: "A reinforcement framework coordinating sequential multi-agent evaluations against vendor schemas.", url: "agentic-routing.html", time: "6 min read" },
+    { cat: "NLP & LLMs", title: "Harmful Helpfulness Detection", desc: "Identifying semantic coercion through longitudinal BERT topic mapping and linguistic deviation tracking.", url: "harmful-helpfulness-nlp.html", time: "5 min read" },
+    { cat: "Platform Integrity", title: "Crisis Detection Telemetry", desc: "Mapping cross-modal algorithmic escalations to intercept platform safety risks before they go viral.", url: "safety-detection.html", time: "8 min read" },
+    { cat: "NLP & LLMs", title: "Structural Discourse Mapping", desc: "Understanding how algorithms can push a user from trivial policy violations into extreme harm categories over time.", url: "structural-discourse-moderation.html", time: "6 min read" },
+    { cat: "Platform Integrity", title: "Enterprise Compliance Guardrails", desc: "A systematic pipeline integrating multi-tier policy rules directly into ML model deployment paths.", url: "compliance-architecture.html", time: "5 min read" },
+    { cat: "Causal Inference", title: "AlphaFold Performance Ablation", desc: "Evaluating capability improvements across CASP13 and CASP14 targets using rigorous Counterfactual Inference.", url: "casp-alphafold-ablation.html", time: "6 min read" },
+    { cat: "Reinforcement Learning", title: "Helpfulness-Safety Pareto Fronts", desc: "Studying conflicts between helpfulness and safety in Reinforcement Learning systems using Constrained Markov Decision Processes.", url: "post-asimovian-framework.html", time: "7 min read" },
+    { cat: "Causal Inference", title: "Gig-Platform Adaptation Vectors", desc: "Modeling how workforce behavior shifts in response to A/B testing of real-time payout logic.", url: "worker-adaptation-simulation.html", time: "5 min read" },
+    { cat: "NLP & LLMs", title: "Doctoral Dissertation: NLP Friction", desc: "Foundational semantic analysis tracking conversational drift within multi-modal clinical intelligence models.", url: "doctoral-dissertation.html", time: "10 min read" },
+    { cat: "Causal Inference", title: "Feature Impact MDE Controls", desc: "A robust statistical engine that evaluates historical variance to calculate the exact impact of product experiments.", url: "statistical-power-analysis.html", time: "6 min read" },
+    { cat: "Clinical & Behavioral", title: "MCA: Multi-Modal Threat Assessment", desc: "Combining Natural Language Processing and behavioral timelines to identify when an individual is escalating toward a Mass Casualty Act.", url: "mca-threat-telemetry.html", time: "7 min read" },
+    { cat: "Clinical & Behavioral", title: "Neurobiological Threat Typologies", desc: "Differentiating severe violent escalation pathways by structurally mapping cortical vs. subcortical autonomic processing.", url: "neurobiological-offenders.html", time: "6 min read" },
+    { cat: "Clinical & Behavioral", title: "UX Livestream Violence Mitigation", desc: "Architectural evaluation of real-time intervention workflows for critical safety broadcasts.", url: "ux-livestream-violence.html", time: "4 min read" },
+    { cat: "Clinical & Behavioral", title: "Assessing Mass Violence Risk", desc: "A clinical matrix quantifying psychological risk escalation.", url: "assessing-mass-violence-risk.html", time: "6 min read" },
+    { cat: "Clinical & Behavioral", title: "Clinical Tool Validation Pipeline", desc: "Validating psychiatric assessment schemas for production environments.", url: "clinical-validation.html", time: "7 min read" },
+    { cat: "Platform Integrity", title: "Credit Decision Fairness", desc: "Modeling disparate impact limits in automated lending systems.", url: "credit-fairness.html", time: "5 min read" },
+    { cat: "Predictive ML", title: "Structure of The Keeper Test", desc: "Analyzing management ratios and IC rates via HR telemetry.", url: "enterprise-keeper-framework.html", time: "6 min read" },
+    { cat: "Predictive ML", title: "Enterprise Talent Analytics", desc: "Macroeconomic parity engine predicting salary deficits and AI skill flight risk.", url: "enterprise-talent-analytics.html", time: "8 min read" },
+    { cat: "Clinical & Behavioral", title: "Implicit Power Drives", desc: "Analyzing non-conscious dominance structures in executive decision making.", url: "implicit-power-drives.html", time: "5 min read" },
+    { cat: "Predictive ML", title: "Measuring Algorithmic Reachability", desc: "IRT modeling to assess how platform UI pathways isolate vulnerable users.", url: "measuring-reachability.html", time: "6 min read" },
+    { cat: "Reinforcement Learning", title: "Payment Retry Optimization", desc: "Using dynamic probabilistic modeling to boost transaction success.", url: "payment-retry-optimization.html", time: "5 min read" },
+    { cat: "Graph ML & Identity", title: "Social FTV Network", desc: "Mapping explicit vs implicit graph nodes for first-time-value interactions.", url: "social-ftv-network.html", time: "5 min read" },
+    { cat: "Platform Integrity", title: "Social Moderation Pipeline", desc: "Multi-tiered safety classification orchestration for high-volume content streams.", url: "social-moderation-pipeline.html", time: "6 min read" },
+    { cat: "Platform Integrity", title: "Policy Anthropology", desc: "Examining policy adherence metrics through cultural metadata shifts.", url: "social-policy-anthropology.html", time: "5 min read" },
+    { cat: "Predictive ML", title: "Synthetic Talent Pipeline", desc: "Simulating enterprise candidate velocity utilizing stochastic ML distributions.", url: "synthetic-talent-pipeline-portfolio.html", time: "7 min read" },
+    { cat: "Predictive ML", title: "Talent Market Intelligence", desc: "Visualizing explicit market density and competitive talent gravity vectors.", url: "talent-market-intelligence.html", time: "6 min read" },
+    { cat: "NLP & LLMs", title: "Telecom RAG Chatbot", desc: "Optimizing retrieval-augmented generation bounds for specialized corporate networks.", url: "telecom-rag-chatbot.html", time: "4 min read" }
+];
+
+const feed = document.getElementById('feedWrap');
+const noRes = document.getElementById('noResults');
+const sInput = document.getElementById('searchInput');
+const tagBtns = document.querySelectorAll('.f-tag');
+
+function renderFeed(filterCat = "All", query = "") {
+    // Clear old elements safely
+    const cards = feed.querySelectorAll('.article-card');
+    cards.forEach(c => c.remove());
+    
+    let count = 0;
+    const qLower = query.toLowerCase();
+
+    projects.forEach(p => {
+        const matchCat = filterCat === "All" || p.cat === filterCat;
+        const matchText = p.title.toLowerCase().includes(qLower) || p.desc.toLowerCase().includes(qLower);
+        
+        if (matchCat && matchText) {
+            count++;
+            const el = document.createElement('a');
+            el.href = p.url;
+            el.className = 'article-card';
+            el.innerHTML = `
+                <div class="art-meta"><span class="art-cat">${p.cat}</span> <span>${p.time}</span></div>
+                <h3 class="art-title">${p.title}</h3>
+                <p class="art-desc">${p.desc}</p>
+                <div class="art-link">Read Publication <span>&rarr;</span></div>
+            `;
+            feed.appendChild(el);
+            
+            // Stagger animate in
+            gsap.to(el, { opacity: 1, y: 0, duration: 0.6, delay: count * 0.05, ease: 'power2.out' });
+        }
+    });
+
+    noRes.style.display = count === 0 ? 'block' : 'none';
+    ScrollTrigger.refresh();
+}
+
+// Event Listeners
+sInput.addEventListener('keyup', (e) => {
+    const act = document.querySelector('.f-tag.active').getAttribute('data-filter');
+    renderFeed(act, e.target.value);
+});
+
+tagBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        tagBtns.forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        renderFeed(e.target.getAttribute('data-filter'), sInput.value);
+        
+        // Update URL cleanly via history state
+        const url = new URL(window.location);
+        if (e.target.dataset.filter === "All") url.searchParams.delete("filter");
+        else url.searchParams.set("filter", e.target.dataset.filter);
+        window.history.pushState({}, '', url);
+    });
+});
+
+window.addEventListener('load', () => {
+    const overlay = document.getElementById('bootOverlay');
+    gsap.to(overlay, { opacity: 0, duration: 1.2, delay: 0.2, ease: 'power2.inOut', onComplete: () => { overlay.style.display = 'none'; } });
+
+    // Check URL parameters for direct category routing (e.g. from index.html)
+    const params = new URLSearchParams(window.location.search);
+    const filterParam = params.get('filter');
+    if (filterParam) {
+        let matched = false;
+        tagBtns.forEach(b => {
+            if (b.getAttribute('data-filter') === filterParam) {
+                b.classList.add('active');
+                matched = true;
+            } else b.classList.remove('active');
+        });
+        renderFeed(matched ? filterParam : "All", "");
+    } else {
+        renderFeed("All", "");
+    }
+});
+</script>
+
+<script>
+/* ============================================================
+   DYNAMIC SIDENOTE CLEARANCE (Global Portfolio Mandate)
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    const sidenoteParagraphs = document.querySelectorAll('.col-with-sidenotes');
+    sidenoteParagraphs.forEach(p => {
+        const sn = p.querySelector('.sn');
+        if (sn) {
+            const updateHeight = () => {
+                if (window.innerWidth >= 1240) {
+                    // Calculate exact clearance needed based on the sidenote's absolute top position
+                    const neededHeight = sn.offsetTop + sn.offsetHeight + 40;
+                    p.style.minHeight = neededHeight + 'px';
+                } else {
+                    p.style.minHeight = 'auto';
+                }
+            };
+            updateHeight();
+            setTimeout(updateHeight, 250);
+            window.addEventListener('resize', updateHeight);
+        }
+    });
+});
+</script>
+
+</body>
+</html>

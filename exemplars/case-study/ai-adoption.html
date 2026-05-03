@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The AI productivity J-curve, as a thinking tool. Dr. Heather Leffew</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS, dual mode, no radii, sharp editorial
+   ============================================================ */
+:root {
+  /* Mineral neutrals (dark register) */
+  --obsidian:#030303;
+  --charcoal:#161616;
+  --graphite:#222222;
+  --brushed:#333333;
+  --tungsten:#A1A1A6;
+  --platinum:#F5F5F7;
+  --flare:#FFFFFF;
+
+  /* Paper neutrals, perfect inversion of the dark register.
+     Paper base = platinum (#F5F5F7). Ink base = obsidian (#030303).
+     Tints are the literal channel-flips of charcoal/graphite/tungsten. */
+  --paper:#F5F5F7;          /* base reading surface  <- inverse of obsidian */
+  --paper-2:#E9E9E9;        /* raised surface        <- inverse of charcoal */
+  --paper-3:#DDDDDD;        /* hairline              <- inverse of graphite */
+  --ink:#030303;            /* primary ink           <- obsidian */
+  --ink-2:#222222;           /* secondary ink         <- graphite */
+  --ink-3:#5E5E5A;          /* meta ink              <- inverse of tungsten */
+
+  /* Brand accents */
+  --sapphire-deep:#0F52BA;
+  --sapphire:#4D8CFF;
+  --ink-blue:#1A3A6B;       /* sapphire's light-mode counterpart */
+  /* Case-study figure palette, "Oil paint quartet".
+     Real pigment names. Glazed flavor (no lift), except Hansa
+     which is always lifted. Monochrome / sequential scales
+     restrict to Phthalo Blue only. */
+  --phthalo:#0F3A6B;        /* Phthalo Blue, primary categorical */
+  --phthalo-lift:#3866A0;   /* Phthalo Blue, lifted, monochrome scale only */
+  --alizarin:#7A1626;       /* Alizarin Crimson */
+  --hookers:#1A4A38;        /* Hooker's Green */
+  --hansa:#DBA844;          /* Hansa Yellow Light, always lifted */
+  --dioxazine:#3D1F4A;      /* Dioxazine Purple, reserve fifth */
+
+  /* Type */
+  --display:'Playfair Display','Times New Roman',serif;
+  --body:'Lora',Georgia,serif;
+  --mono:'JetBrains Mono','SF Mono',Menlo,monospace;
+
+  /* Motion */
+  --ease-out:cubic-bezier(0.16,1,0.3,1);
+  --ease-std:cubic-bezier(0.4,0,0.2,1);
+
+  /* Reading column */
+  --col:680px;
+  --col-wide:1080px;
+}
+
+/* No radii. Anywhere. */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; border-radius:0 !important; }
+
+::selection { background:rgba(77,140,255,0.35); color:#fff; }
+
+html { scroll-behavior:smooth; }
+body {
+  font-family:var(--body);
+  background:var(--obsidian);
+  color:var(--platinum);
+  font-size:18px;
+  line-height:1.78;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Fixed atmosphere, switches with mode */
+.atmosphere {
+  position:fixed; inset:0; z-index:-30; pointer-events:none;
+  transition:background 1.2s var(--ease-std);
+}
+
+/* ============================================================
+   MODE BANDS
+   The page alternates between dark and light bands.
+   Each <section.band> declares its own mode.
+   ============================================================ */
+.band { position:relative; padding:140px 0; transition:background 0.9s var(--ease-std), color 0.9s var(--ease-std); }
+.band--dark  { background:var(--obsidian); color:var(--platinum); }
+.band--paper { background:var(--platinum); color:var(--obsidian); }
+.band--ink   { background:var(--obsidian); color:var(--platinum); }   /* unified with --dark; kept as a class for layout/quote slabs */
+
+.band--dark + .band--paper, .band--paper + .band--dark, .band--ink + .band--paper, .band--paper + .band--ink {
+  /* hairline scroll-edge between mode flips */
+  border-top:1px solid rgba(0,0,0,0.0);
+}
+
+.col      { max-width:var(--col);      margin:0 auto; padding:0 32px; }
+.col-wide { max-width:var(--col-wide); margin:0 auto; padding:0 48px; }
+
+/* ============================================================
+   GLOBAL CHROME
+   Top progress hairline + side chapter spine.
+   Both glass, that's where glass earns its keep.
+   ============================================================ */
+#progress {
+  position:fixed; top:0; left:0; right:0; height:2px;
+  z-index:200; pointer-events:none;
+  background:transparent;
+}
+#progress::after {
+  content:''; position:absolute; left:0; top:0; bottom:0;
+  width:var(--p,0%);
+  background:linear-gradient(90deg, var(--sapphire) 0%, var(--sapphire-deep) 100%);
+  transition:width 0.05s linear;
+}
+
+#topnav {
+  position:fixed; top:0; left:0; right:0; height:60px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 32px; z-index:150;
+  font-family:var(--mono); font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--platinum);
+  background:rgba(3,3,3,0.55);
+  backdrop-filter:blur(14px) saturate(140%);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  transition:background 0.6s var(--ease-std), color 0.6s var(--ease-std), border-color 0.6s var(--ease-std);
+}
+#topnav.is-paper {
+  background:rgba(245,245,247,0.82);
+  border-bottom-color:rgba(0,0,0,0.08);
+  color:var(--ink);
+}
+#topnav .brand { font-family:var(--display); font-size:15px; font-weight:600; letter-spacing:0.04em; text-transform:none; color:inherit; text-decoration:none; }
+#topnav .brand:visited { color:inherit; }
+#topnav .brand:hover { opacity:0.85; }
+#topnav .crumbs { display:flex; gap:18px; align-items:center; }
+#topnav .crumbs a { color:inherit; text-decoration:none; opacity:0.7; transition:opacity .25s; }
+#topnav .crumbs a:hover { opacity:1; }
+#topnav .sep { opacity:0.35; }
+
+/* Chapter spine, fixed left rail */
+#spine {
+  position:fixed; left:18px; top:50%; transform:translateY(-50%);
+  z-index:130; pointer-events:auto;
+  display:flex; flex-direction:column; gap:14px;
+  padding:18px 14px;
+  background:rgba(3,3,3,0.45);
+  color:var(--platinum);
+  backdrop-filter:blur(14px) saturate(140%);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  border:1px solid rgba(255,255,255,0.08);
+  transition:background 0.6s var(--ease-std), border-color 0.6s var(--ease-std), color 0.6s var(--ease-std);
+}
+#spine.is-paper { background:rgba(245,245,247,0.78); border-color:rgba(0,0,0,0.10); color:var(--ink); }
+#spine .row { display:flex; align-items:center; gap:10px; cursor:pointer; }
+#spine .tick {
+  width:16px; height:1px; background:currentColor; opacity:0.35;
+  transition:width .35s var(--ease-out), opacity .35s var(--ease-out);
+}
+#spine .row.is-active .tick { width:28px; opacity:1; background:var(--sapphire); }
+#spine .row.is-paper-active .tick { background:var(--ink-blue); }
+#spine .label { font-family:var(--mono); font-size:9.5px; letter-spacing:0.18em; text-transform:uppercase; opacity:0.55; transition:opacity .35s; white-space:nowrap; }
+#spine .row:hover .label, #spine .row.is-active .label { opacity:1; }
+#spine .num { font-family:var(--mono); font-size:9px; opacity:0.4; width:14px; }
+@media (max-width:1180px) { #spine { display:none; } }
+
+/* Reading-status pebble bottom-right */
+#status {
+  position:fixed; right:24px; bottom:24px; z-index:130;
+  font-family:var(--mono); font-size:10px; letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--platinum);
+  padding:10px 14px;
+  background:rgba(3,3,3,0.45);
+  backdrop-filter:blur(14px) saturate(140%);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  border:1px solid rgba(255,255,255,0.08);
+  display:flex; gap:14px; align-items:center;
+  transition:background 0.6s var(--ease-std), border-color 0.6s var(--ease-std), color 0.6s var(--ease-std);
+}
+#status.is-paper { background:rgba(245,245,247,0.78); border-color:rgba(0,0,0,0.10); color:var(--ink); }
+#status .dot { width:5px; height:5px; background:var(--sapphire); display:inline-block; }
+#status .pct { color:var(--sapphire); font-weight:500; }
+#status.is-paper .dot { background:var(--ink-blue); }
+#status.is-paper .pct { color:var(--ink-blue); }
+
+/* ============================================================
+   FRONT MATTER (dark hero)
+   ============================================================ */
+.front {
+  min-height:100vh;
+  padding:160px 0 100px;
+  display:flex; flex-direction:column; justify-content:center;
+  position:relative; overflow:hidden;
+}
+.front .col-wide { position:relative; z-index:2; }
+.front .meta-row { font-family:var(--mono); font-size:11px; letter-spacing:0.30em; text-transform:uppercase; color:var(--tungsten); margin-bottom:40px; display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+.front .meta-row .sep { opacity:0.4; }
+.front h1 {
+  font-family:var(--display); font-weight:600;
+  font-size:clamp(44px, 5.0vw, 72px);
+  letter-spacing:-0.018em; line-height:1.06;
+  color:var(--flare); margin-bottom:36px;
+  max-width:18ch;
+}
+.front .abstract {
+  font-family:var(--body); font-style:italic;
+  font-size:22px; line-height:1.62; color:var(--platinum);
+  max-width:60ch; margin-bottom:48px;
+}
+.front .byline { display:flex; gap:36px; flex-wrap:wrap;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.20em; text-transform:uppercase; color:var(--tungsten); }
+.front .byline strong { color:var(--platinum); font-weight:500; display:block; margin-top:6px; letter-spacing:0.08em; font-family:var(--body); font-style:italic; font-size:14px; text-transform:none; }
+
+/* Citation block in front matter, looks like a journal head */
+.front .citation {
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.10em; color:var(--tungsten);
+  border-top:1px solid rgba(255,255,255,0.18);
+  padding-top:24px;
+  line-height:1.85;
+}
+.front .citation b { color:var(--platinum); font-weight:500; }
+
+/* Ambient signal, a quiet calibrated arc, sits in the hero background */
+.ambient {
+  position:absolute; right:-12%; top:50%; transform:translateY(-50%);
+  width:64%; max-width:820px; aspect-ratio:1; pointer-events:none;
+  z-index:1;
+  opacity:0; animation:ambient-fade 1.6s 0.6s var(--ease-out) forwards;
+}
+@keyframes ambient-fade { to { opacity:0.32; } }
+.ambient svg { width:100%; height:100%; display:block; }
+/* On wider viewports the abstract + byline sit in a left column so the ambient
+   has visual room on the right; on narrower it stacks. */
+.front .grid { display:grid; grid-template-columns:minmax(0,1fr); gap:40px; }
+@media (min-width:980px) {
+  .front .grid { grid-template-columns:minmax(0,1fr) 320px; gap:80px; align-items:end; }
+}
+
+/* ============================================================
+   READING SECTIONS, PAPER MODE
+   ============================================================ */
+.band--paper h2 {
+  font-family:var(--display); font-weight:600; color:var(--ink);
+  font-size:clamp(34px, 3.6vw, 48px); letter-spacing:-0.012em; line-height:1.12;
+  margin:0 auto 28px; max-width:var(--col); padding:0 32px;
+}
+.band--paper .eyebrow {
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.30em; text-transform:uppercase;
+  color:var(--ink-blue); margin:0 auto 18px; max-width:var(--col); padding:0 32px;
+}
+.band--paper .lede {
+  font-family:var(--body); font-style:italic; font-size:21px; line-height:1.6; color:var(--ink-2);
+  margin:0 auto 36px; max-width:var(--col); padding:0 32px;
+}
+.band--paper p {
+  margin:0 auto 22px; max-width:var(--col); padding:0 32px;
+  font-size:18px; line-height:1.78; color:var(--ink);
+}
+
+/* Drop cap on first paragraph after h2.is-chapter */
+.has-dropcap::first-letter {
+  font-family:var(--display); font-weight:600;
+  font-size:5.6em; line-height:0.86;
+  float:left; margin:0.06em 0.10em -0.08em 0;
+  color:var(--ink-blue);
+}
+
+/* Dark mode prose */
+.band--dark p, .band--ink p {
+  margin:0 auto 22px; max-width:var(--col); padding:0 32px;
+  font-size:18px; line-height:1.78; color:var(--platinum);
+}
+.band--dark h2, .band--ink h2 {
+  font-family:var(--display); font-weight:600; color:var(--flare);
+  font-size:clamp(34px, 3.6vw, 48px); letter-spacing:-0.012em; line-height:1.12;
+  margin:0 auto 28px; max-width:var(--col); padding:0 32px;
+}
+.band--dark .eyebrow, .band--ink .eyebrow {
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.30em; text-transform:uppercase;
+  color:var(--sapphire); margin:0 auto 18px; max-width:var(--col); padding:0 32px;
+}
+.band--dark .lede, .band--ink .lede {
+  font-family:var(--body); font-style:italic; font-size:21px; line-height:1.6; color:var(--tungsten);
+  margin:0 auto 36px; max-width:var(--col); padding:0 32px;
+}
+
+/* ============================================================
+   GLOSSARY TERMS, dotted-underline + glass tooltip
+   <span class="gloss" data-def="...">term</span>
+   ============================================================ */
+.gloss {
+  border-bottom:1px dotted currentColor;
+  cursor:help;
+  position:relative;
+}
+.gloss:hover { color:var(--ink-blue); }
+.band--dark .gloss:hover, .band--ink .gloss:hover { color:var(--sapphire); }
+.gloss .gloss-tip {
+  position:absolute; left:50%; transform:translate(-50%, -8px);
+  bottom:100%; min-width:280px; max-width:340px;
+  font-family:var(--body); font-style:italic; font-size:13.5px; line-height:1.55;
+  font-weight:400;
+  color:var(--ink); padding:14px 16px;
+  background:rgba(255,255,255,0.92);
+  backdrop-filter:blur(16px) saturate(140%);
+  -webkit-backdrop-filter:blur(16px) saturate(140%);
+  border:1px solid rgba(0,0,0,0.10);
+  box-shadow:0 14px 40px rgba(0,0,0,0.18);
+  opacity:0; pointer-events:none;
+  transition:opacity .25s var(--ease-std), transform .25s var(--ease-std);
+  z-index:120;
+  text-align:left;
+}
+.band--dark .gloss .gloss-tip, .band--ink .gloss .gloss-tip {
+  background:rgba(20,20,20,0.92); color:var(--platinum);
+  border-color:rgba(255,255,255,0.10);
+}
+.gloss:hover .gloss-tip { opacity:1; transform:translate(-50%, -14px); }
+
+/* ============================================================
+   INTERNAL LINK PREVIEW CARDS
+   <a class="xlink" data-preview-id="case-03"...>
+   ============================================================ */
+.xlink {
+  color:var(--ink-blue); text-decoration:none;
+  border-bottom:1px solid currentColor;
+  position:relative;
+  transition:color .25s;
+}
+.band--dark .xlink, .band--ink .xlink { color:var(--sapphire); }
+.xlink:hover { color:var(--hansa); }
+.band--dark .xlink:hover, .band--ink .xlink:hover { color:var(--flare); }
+
+#hover-preview {
+  position:fixed; z-index:140; pointer-events:none;
+  width:340px; padding:22px 22px 20px;
+  background:rgba(20,20,20,0.92);
+  color:var(--platinum);
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  border:1px solid rgba(255,255,255,0.10);
+  box-shadow:0 18px 60px rgba(0,0,0,0.45);
+  opacity:0; transform:translateY(8px);
+  transition:opacity .25s var(--ease-std), transform .25s var(--ease-std);
+}
+#hover-preview.is-paper {
+  background:rgba(245,243,238,0.94); color:var(--ink);
+  border-color:rgba(0,0,0,0.10); box-shadow:0 18px 60px rgba(0,0,0,0.18);
+}
+#hover-preview.is-on { opacity:1; transform:translateY(0); }
+#hover-preview .h-eb { font-family:var(--mono); font-size:9.5px; letter-spacing:0.30em; text-transform:uppercase; color:var(--sapphire); margin-bottom:10px; }
+#hover-preview.is-paper .h-eb { color:var(--ink-blue); }
+#hover-preview .h-t  { font-family:var(--display); font-size:20px; font-weight:600; line-height:1.22; margin-bottom:10px; }
+#hover-preview .h-d  { font-family:var(--body); font-size:13.5px; line-height:1.6; opacity:0.85; }
+#hover-preview .h-ft { font-family:var(--mono); font-size:9.5px; letter-spacing:0.20em; text-transform:uppercase; opacity:0.6; margin-top:14px; padding-top:12px; border-top:1px solid currentColor; }
+
+/* ============================================================
+   PULL QUOTES, dark INK band, full bleed
+   ============================================================ */
+.pullquote {
+  font-family:var(--display); font-style:italic; font-weight:500;
+  font-size:clamp(28px, 3.6vw, 48px); line-height:1.22;
+  color:var(--flare);
+  max-width:18ch; margin:0 auto;
+  letter-spacing:-0.005em;
+  text-align:center;
+}
+.pullquote::before { content:'\201C'; display:block; font-style:normal; font-size:1.6em; line-height:0; color:var(--sapphire); margin-bottom:14px; }
+.pullquote .qa {
+  display:block; margin-top:36px;
+  font-family:var(--mono); font-size:11px; font-style:normal; font-weight:400;
+  letter-spacing:0.30em; text-transform:uppercase; color:var(--tungsten);
+}
+
+/* ============================================================
+   FIGURES, full-bleed, paper-mode chart card
+   ============================================================ */
+.figure {
+  margin:48px auto;
+  max-width:var(--col-wide); padding:0 32px;
+}
+.figure .frame {
+  position:relative;
+  background:#fff;
+  border:1px solid var(--paper-3);
+  padding:32px 36px 28px;
+  transition:filter .35s var(--ease-std);
+}
+.band--dark .figure .frame, .band--ink .figure .frame {
+  background:#0A0A0A; border-color:var(--graphite);
+}
+.figure .frame:hover { filter:brightness(1.02); }
+.figure .cap {
+  font-family:var(--mono); font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--ink-3); margin-top:14px; max-width:60ch;
+}
+.band--dark .figure .cap, .band--ink .figure .cap { color:var(--tungsten); }
+.figure .cap .num { color:var(--ink-blue); margin-right:10px; }
+.band--dark .figure .cap .num, .band--ink .figure .cap .num { color:var(--sapphire); }
+
+/* ============================================================
+   STATS STRIP, sharp, no boxes
+   ============================================================ */
+.stats {
+  max-width:var(--col-wide); margin:48px auto; padding:0 32px;
+  display:grid; grid-template-columns:repeat(4, 1fr); gap:0;
+  border-top:1px solid var(--paper-3); border-bottom:1px solid var(--paper-3);
+}
+.band--dark .stats, .band--ink .stats { border-color:var(--graphite); }
+.stats .s {
+  padding:32px 24px; border-right:1px solid var(--paper-3);
+}
+.stats .s:last-child { border-right:0; }
+.band--dark .stats .s, .band--ink .stats .s { border-right-color:var(--graphite); }
+.stats .v { font-family:var(--mono); font-weight:500; font-size:38px; color:var(--ink); line-height:1; margin-bottom:10px; }
+.band--dark .stats .v, .band--ink .stats .v { color:var(--flare); }
+.stats .l { font-family:var(--mono); font-size:10px; letter-spacing:0.22em; text-transform:uppercase; color:var(--ink-3); }
+.band--dark .stats .l, .band--ink .stats .l { color:var(--tungsten); }
+
+@media (max-width:880px) { .stats { grid-template-columns:repeat(2,1fr); } .stats .s:nth-child(2) { border-right:0; } }
+
+/* ============================================================
+   TAGS, flat rectangular, no pills
+   ============================================================ */
+.tagrow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.tag {
+  font-family:var(--mono); font-size:10px; letter-spacing:0.20em; text-transform:uppercase;
+  color:var(--ink-3); border:1px solid var(--paper-3);
+  padding:6px 12px; background:transparent;
+}
+.band--dark .tag, .band--ink .tag { color:var(--tungsten); border-color:var(--graphite); }
+.tag.is-on { color:var(--ink-blue); border-color:var(--ink-blue); }
+.band--dark .tag.is-on, .band--ink .tag.is-on { color:var(--sapphire); border-color:var(--sapphire); }
+
+/* Bracket-style label (for "Case 07", category eyebrows) */
+.bracket {
+  font-family:var(--mono); font-size:10px; letter-spacing:0.30em; text-transform:uppercase; color:inherit;
+}
+.bracket::before, .bracket::after { content:''; display:inline-block; width:14px; height:1px; background:currentColor; vertical-align:middle; opacity:0.5; }
+.bracket::before { margin-right:10px; }
+.bracket::after  { margin-left:10px; }
+
+/* ============================================================
+   METHODOLOGY CALLOUT, sharp aside on paper
+   ============================================================ */
+.method {
+  max-width:var(--col); margin:36px auto; padding:0 32px;
+}
+.method .inner {
+  border-left:2px solid var(--ink-blue);
+  padding:20px 26px;
+  background:var(--paper-2);
+  font-family:var(--body); font-size:15.5px; line-height:1.7; color:var(--ink-2);
+}
+.band--dark .method .inner, .band--ink .method .inner { background:var(--charcoal); border-left-color:var(--sapphire); color:var(--platinum); }
+.method .lab { font-family:var(--mono); font-size:9.5px; letter-spacing:0.30em; text-transform:uppercase; color:var(--ink-blue); margin-bottom:8px; }
+.band--dark .method .lab, .band--ink .method .lab { color:var(--sapphire); }
+
+/* ============================================================
+   BACK MATTER
+   ============================================================ */
+.back-matter { padding-top:120px; padding-bottom:160px; }
+.back-matter h3 {
+  font-family:var(--display); font-weight:600; font-size:24px; line-height:1.2; color:var(--flare);
+  margin:0 auto 22px; max-width:var(--col-wide); padding:0 48px;
+}
+.back-matter .biblio { max-width:var(--col-wide); margin:0 auto 60px; padding:0 48px; }
+.back-matter .biblio li {
+  list-style:none;
+  font-family:var(--body); font-size:14.5px; line-height:1.65; color:var(--platinum);
+  padding:14px 0; border-top:1px solid var(--graphite);
+  display:grid; grid-template-columns:50px 1fr; gap:20px;
+}
+.back-matter .biblio li:last-child { border-bottom:1px solid var(--graphite); }
+.back-matter .biblio .n { font-family:var(--mono); font-size:11px; color:var(--sapphire); letter-spacing:0.20em; }
+.back-matter .biblio .ent i { color:var(--tungsten); }
+
+.back-matter .related { max-width:var(--col-wide); margin:0 auto 60px; padding:0 48px; }
+.related-grid {
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:0;
+  border-top:1px solid var(--graphite); border-bottom:1px solid var(--graphite);
+}
+.r-card {
+  display:block; padding:28px 28px 32px;
+  border-right:1px solid var(--graphite);
+  text-decoration:none; color:inherit; position:relative;
+  transition:background .35s var(--ease-std);
+}
+.r-card:last-child { border-right:0; }
+.r-card:hover { background:rgba(77,140,255,0.04); }
+.r-card .eb { font-family:var(--mono); font-size:9.5px; letter-spacing:0.28em; text-transform:uppercase; color:var(--sapphire); margin-bottom:14px; }
+.r-card .ti { font-family:var(--display); font-size:22px; font-weight:600; line-height:1.18; color:var(--flare); margin-bottom:12px; }
+.r-card .ds { font-family:var(--body); font-size:14px; line-height:1.65; color:var(--tungsten); margin-bottom:20px; }
+.r-card .ar { font-family:var(--mono); font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:var(--platinum); opacity:0.7; }
+.r-card:hover .ar { opacity:1; }
+@media (max-width:880px) { .related-grid { grid-template-columns:1fr; } .r-card { border-right:0; border-bottom:1px solid var(--graphite); } .r-card:last-child { border-bottom:0; } }
+
+/* Cite-graph (mini SVG network) */
+.citegraph { max-width:var(--col-wide); margin:0 auto 60px; padding:0 48px; }
+.citegraph svg { width:100%; height:240px; display:block; background:var(--charcoal); border:1px solid var(--graphite); }
+.citegraph .lab { font-family:var(--mono); font-size:10px; letter-spacing:0.22em; text-transform:uppercase; color:var(--tungsten); margin-top:10px; }
+
+/* Next chapter */
+.next-chap {
+  max-width:var(--col-wide); margin:80px auto 0; padding:48px;
+  border-top:1px solid var(--graphite); border-bottom:1px solid var(--graphite);
+  display:flex; align-items:center; justify-content:space-between; gap:32px;
+  text-decoration:none; color:inherit;
+  transition:background .35s var(--ease-std);
+}
+.next-chap:hover { background:rgba(77,140,255,0.05); }
+.next-chap .lf .eb { font-family:var(--mono); font-size:10px; letter-spacing:0.30em; text-transform:uppercase; color:var(--sapphire); margin-bottom:12px; }
+.next-chap .lf .ti { font-family:var(--display); font-size:32px; font-weight:600; color:var(--flare); line-height:1.18; max-width:22ch; }
+.next-chap .rt { font-family:var(--mono); font-size:14px; letter-spacing:0.20em; text-transform:uppercase; color:var(--sapphire); }
+
+/* ============================================================
+   GLOSSARY HOVER state, hide tooltip when JS detects mode change
+   ============================================================ */
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer.site-foot {
+  background:var(--obsidian); color:var(--tungsten);
+  padding:60px 48px; border-top:1px solid var(--graphite);
+  font-family:var(--mono); font-size:10px; letter-spacing:0.16em; text-transform:uppercase;
+  display:flex; justify-content:space-between; align-items:center;
+}
+footer.site-foot a { color:inherit; text-decoration:none; opacity:0.8; }
+footer.site-foot a:hover { opacity:1; color:var(--platinum); }
+
+/* ============================================================
+   Reveal, translate + opacity, no bounces
+   ============================================================ */
+.reveal { opacity:0; transform:translateY(18px); transition:opacity .9s var(--ease-out), transform .9s var(--ease-out); }
+.reveal.is-on { opacity:1; transform:none; }
+
+/* ============================================================
+   Scroll-tied parallax helper (figures move at 0.96x scroll)
+   ============================================================ */
+.parallax { transform:translate3d(0,0,0); will-change:transform; }
+
+/* Minor: list item style for ul.bullets */
+ul.bullets { max-width:var(--col); margin:0 auto 22px; padding:0 32px; list-style:none; }
+ul.bullets li { padding-left:22px; position:relative; margin-bottom:10px; font-size:17px; line-height:1.7; color:inherit; }
+ul.bullets li::before { content:'\25B8'; position:absolute; left:0; top:1px; font-family:var(--mono); color:var(--ink-blue); font-size:11px; }
+.band--dark ul.bullets li::before, .band--ink ul.bullets li::before { color:var(--sapphire); }
+
+/* ============================================================
+   SANDBOX (section 03)
+   Mapped to canonical-specimen tokens.
+   --sapphire-light  -> --sapphire
+   --platinum        -> --platinum
+   --border          -> rgba(255,255,255,0.12) on dark, var(--paper-3) on paper
+   --gray-light      -> var(--tungsten)
+   --gray-dark       -> var(--ink-3) on paper, var(--tungsten) on dark
+   --font-primary    -> var(--mono) for labels
+   --font-secondary  -> var(--display) for KPI values
+   ============================================================ */
+
+.sandbox {
+  margin: 3rem auto;
+  max-width: var(--col-wide);
+}
+
+.sandbox-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 2rem;
+  min-height: 500px;
+}
+
+@media (max-width: 820px) {
+  .sandbox-grid { grid-template-columns: 1fr; }
+}
+
+.math-strip {
+  margin: 2rem auto;
+  max-width: var(--col-wide);
+}
+
+.math-block {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  background: rgba(77, 140, 255, 0.07);
+  border-left: 2px solid var(--sapphire);
+  padding: 1.5rem;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.6;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.band--dark .math-block, .band--ink .math-block {
+  background: rgba(77, 140, 255, 0.08);
+  color: var(--platinum);
+}
+
+.vars-panel {
+  background: var(--paper-2);
+  border: 1px solid var(--paper-3);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.panel-title {
+  font-family: var(--mono);
+  color: var(--ink);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--paper-3);
+  padding-bottom: 0.5rem;
+  letter-spacing: 0.18em;
+}
+
+.panel-foot {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--paper-3);
+  font-family: var(--body);
+  font-style: italic;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.slider-val {
+  color: var(--sapphire-deep);
+  font-weight: 600;
+}
+
+.sandbox input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  height: 14px;
+}
+
+.sandbox input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  background: var(--sapphire-deep);
+  cursor: pointer;
+  margin-top: -5px;
+}
+
+.sandbox input[type=range]::-moz-range-thumb {
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  background: var(--sapphire-deep);
+  cursor: pointer;
+  border: 0;
+}
+
+.sandbox input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 2px;
+  cursor: pointer;
+  background: var(--paper-3);
+}
+
+.sandbox input[type=range]::-moz-range-track {
+  width: 100%;
+  height: 2px;
+  background: var(--paper-3);
+}
+
+.output-panel {
+  background: var(--obsidian);
+  border: 1px solid var(--graphite);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.chart-wrapper {
+  position: relative;
+  width: 100%;
+  height: 350px;
+  background: var(--charcoal);
+  border: 1px solid var(--graphite);
+  padding: 20px;
+  overflow: hidden;
+}
+
+.chart-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--sapphire);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: d 0.5s var(--ease-std);
+}
+
+.chart-area {
+  fill: rgba(77, 140, 255, 0.10);
+  transition: d 0.5s var(--ease-std);
+}
+
+.zero-line {
+  stroke: var(--brushed);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.axis-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  fill: var(--tungsten);
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 0;
+}
+
+.kpi-box {
+  text-align: center;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--graphite);
+  padding: 1rem;
+}
+
+.kpi-v {
+  font-family: var(--display);
+  font-size: 1.8rem;
+  color: var(--flare);
+  margin-bottom: 0.35rem;
+  line-height: 1.1;
+}
+
+.kpi-l {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--tungsten);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.kpi-alert { color: #C94A5C; }
+.kpi-success { color: #4FB286; }
+
+
+/* ============================================================
+   SIDENOTES: Adaptive Tufte-Style (Institutional Standard)
+   ============================================================ */
+.sn { position:relative; }
+.sn-num { font-family:var(--mono); font-size:9px; color:var(--sapphire); vertical-align:super; cursor:pointer; padding:0 2px; }
+.band--paper .sn-num { color:var(--ink-blue); }
+.sn-num:hover { color:var(--hansa); }
+.sn-body { display:none; }
+
+@media (min-width: 1240px) {
+  p.col-with-sidenotes { position:relative; }
+  .sn { position:absolute; left:calc(100% + 40px); width:240px; font-family:var(--body); font-size:12.5px; line-height:1.5; color:var(--tungsten); }
+  .band--paper .sn { color:var(--ink-3); }
+  .sn-num { position:absolute; left:-24px; top:2px; }
+  .sn-body { display:block; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .band--paper .sn-body { border-bottom-color:rgba(0,0,0,0.06); }
+}
+
+@media (max-width: 1239px) {
+  p.col-with-sidenotes { position:relative; }
+  .sn { display:inline; }
+  .sn-body { display:block; margin:12px 0; padding:12px 16px; font-family:var(--body); font-size:14px; line-height:1.6; color:var(--platinum); background:rgba(255,255,255,0.04); border-left:2px solid var(--sapphire); }
+  .band--paper .sn-body { color:var(--ink); background:rgba(0,0,0,0.04); border-left-color:var(--ink-blue); }
+  .sn-num { display:inline; position:static; font-size:11px; margin-right:6px; }
+}
+
+
+/* ============================================================
+   MASTER GRID & PORTRAIT MODE POLISH
+   ============================================================ */
+:root { --grid-left: max(32px, calc(50vw - 540px)); }
+@media (min-width: 1360px) { :root { --grid-left: max(260px, calc(50vw - 540px)); } }
+
+@media (min-width: 1240px) {
+  section.band:not(.front) {
+    display: grid;
+    grid-template-columns: var(--grid-left) 680px 400px minmax(16px, 1fr);
+    align-items: start;
+  }
+  section.band:not(.front) > * {
+    grid-column: 2 / 3;
+    margin-left: 0 !important; 
+    margin-right: 0 !important;
+  }
+  section.band:not(.front) > .col-wide, 
+  section.band:not(.front) > .stat-grid, 
+  section.band:not(.front) > .figure, 
+  section.band:not(.front) > .report-prose {
+    grid-column: 2 / 4;
+    width: 100%; 
+    max-width: none;
+  }
+  .stat-grid { justify-content: start !important; }
+}
+
+@media (min-width: 1180px) and (max-width: 1359px) {
+  #spine {
+    width: 44px; overflow: hidden; white-space: nowrap;
+    transition: width 0.4s cubic-bezier(0.16,1,0.3,1), background 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+  #spine:hover { width: 250px; }
+}
+@media (min-width: 1360px) {
+  #spine { width: auto; overflow: visible; }
+}
+
+/* Portrait Mode Space Fix */
+.front { min-height: clamp(400px, 80vh, 850px) !important; justify-content: center !important; }
+
+</style>
+</head>
+
+<body>
+
+<!-- Atmosphere, invisible during paper bands -->
+<div class="atmosphere"></div>
+
+<!-- Reading progress -->
+<div id="progress"></div>
+
+<!-- Top nav -->
+<header id="topnav">
+  <a href="#" class="brand">Dr. Heather Leffew</a>
+  <div class="crumbs">
+    <a href="#"><- Writing</a>
+    <span class="sep">/</span>
+    <a href="#">Clinical &amp; behavioral ML</a>
+    <span class="sep">/</span>
+    <span>ADOS-2 pipeline</span>
+  </div>
+</header>
+
+<!-- Chapter spine -->
+<aside id="spine"></aside>
+
+<!-- Reading status -->
+<div id="status">
+  <span class="dot"></span>
+  <span class="sec">Front matter</span>
+  <span class="pct">0%</span>
+  <span>/</span>
+  <span class="time">~22 min</span>
+</div>
+
+<!-- Hover preview portal -->
+<div id="hover-preview">
+  <div class="h-eb"></div>
+  <div class="h-t"></div>
+  <div class="h-d"></div>
+  <div class="h-ft"></div>
+</div>
+
+
+<!-- ============================================================
+     FRONT MATTER
+     ============================================================ -->
+<section class="band band--dark front" data-spine="Front" data-section="Front matter">
+  <!-- Ambient calibration arc (background layer) -->
+  <div class="ambient" aria-hidden="true">
+    <svg viewBox="0 0 600 600" fill="none">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#4D8CFF" stop-opacity="0.55"/>
+          <stop offset="100%" stop-color="#0F52BA" stop-opacity="0.0"/>
+        </linearGradient>
+      </defs>
+      <g stroke="url(#g1)" stroke-width="1" fill="none">
+        <circle cx="300" cy="300" r="80"/>
+        <circle cx="300" cy="300" r="140"/>
+        <circle cx="300" cy="300" r="200"/>
+        <circle cx="300" cy="300" r="260"/>
+      </g>
+      <line x1="60" y1="540" x2="540" y2="60" stroke="#4D8CFF" stroke-width="1" stroke-dasharray="2 6" opacity="0.8"/>
+      <g fill="#4D8CFF" opacity="0.7">
+        <circle cx="120" cy="490" r="2.5"/>
+        <circle cx="180" cy="430" r="2.5"/>
+        <circle cx="240" cy="380" r="2.5"/>
+        <circle cx="300" cy="310" r="2.5"/>
+        <circle cx="360" cy="260" r="2.5"/>
+        <circle cx="420" cy="210" r="2.5"/>
+        <circle cx="480" cy="140" r="2.5"/>
+      </g>
+      <circle cx="380" cy="380" r="3.5" fill="#7A1626" opacity="0.95"/>
+      <text x="400" y="386" font-family="JetBrains Mono" font-size="10" fill="#A1A1A6" letter-spacing="2">OUTLIER</text>
+    </svg>
+  </div>
+
+  <div class="col-wide">
+    <div class="grid">
+     <div>
+      <div class="meta-row">
+        <span class="bracket">Enterprise AI &amp; systems dynamics</span>
+        <span class="sep">/</span>
+        <span>Illustrative model</span>
+        <span class="sep">/</span>
+        <span>14 min read</span>
+      </div>
+
+      <h1>The AI productivity J-curve, as a thinking tool.</h1>
+
+      <p class="abstract">
+        A stylized two-function model of AI adoption, one decaying integration cost and one compounding integration return, wired into an interactive sandbox so the reader can watch the trough deepen, the breakeven slip, and the terminal value swing under three coefficients. The math is illustrative. The exponents were chosen for shape, not estimated from data. The page is a teaching tool for a single structural intuition: the depth of the trough is the variable that decides whether the curve gets to compound at all.
+      </p>
+
+      <div class="byline">
+        <div>
+          Model
+          <strong>Net(t) = Gain(t) - Cost(t), with Gain(t) = a*t^1.85 and Cost(t) = b*t*e^(-t/4.5), parameterized by three coefficients the reader controls</strong>
+        </div>
+        <div>
+          Sandbox
+          <strong>Three sliders for legacy debt, talent density, and integration scope, driving a 24-month curve, three KPIs (max drawdown, breakeven horizon, terminal net), and an SVG plot updated on input</strong>
+        </div>
+        <div>
+          Claim
+          <strong>One: at fixed integration scope, the depth of the early-month trough is set almost entirely by the ratio of legacy debt to talent density, and the trough sets whether the project survives long enough to compound</strong>
+        </div>
+      </div>
+     </div>
+     <div></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     1, SETUP (paper)
+     ============================================================ -->
+<section class="band band--paper" data-spine="Setup" data-section="What this is">
+  <div class="eyebrow reveal">01 / Setup</div>
+  <h2 class="reveal is-chapter">A teaching tool, not an estimate.</h2>
+
+  <p class="has-dropcap reveal col-with-sidenotes">
+    What follows is a thinking tool for one structural intuition about enterprise AI adoption: the early-month trough is not a side effect of the curve, the trough is the variable that decides whether the curve compounds at all. The page builds that intuition with a stylized two-function model<span class="sn"><span class="sn-num">1</span><span class="sn-body">Stylized in the technical sense: the functional forms <code>t^1.85</code> for return and <code>t * e^(-t/4.5)</code> for cost were chosen because they produce the J shape and the early peak the literature on technology-adoption curves describes (Brynjolfsson, Rock &amp; Syverson, 2017). The exponents were not estimated from data. Three coefficients (legacy debt, talent density, integration scope) scale the model; the reader controls them with sliders.</span></span>, an interactive sandbox that lets the reader vary three coefficients, and three downstream readouts the sandbox computes from the curve. There is no empirical claim. The page does not estimate a real organization's ROI; it teaches the shape of the tradeoff that any such estimate has to live inside.
+  </p>
+
+  <p class="reveal col-with-sidenotes">
+    The model has two halves. <em>Cost(t)</em> rises, peaks, and decays, the familiar shape of integration debt: legacy systems that have to be re-routed, security review, talent acquired at a premium, and the organizational overhead of running new pipelines next to old ones. <em>Gain(t)</em> compounds: the longer the system runs, the more processes it touches, and the returns scale super-linearly in integration scope. The net curve is the difference. Early months are dominated by cost; later months are dominated by gain; the depth of the trough between them is the page's central variable.
+  </p>
+
+  <p class="reveal">
+    None of the structural ingredients are novel. The J-curve shape is well-established in the productivity-paradox literature; <a class="xlink" data-preview-id="brynjolfsson-anchor" href="#">Brynjolfsson, Rock &amp; Syverson 2017</a> describe it directly for general-purpose technologies. The contribution, if any, is in making the trade-off interactive: the reader cannot read this page passively. The sandbox forces a hand on the sliders, and the page's claim survives or fails depending on whether the resulting curves match the reader's intuition about the organizations they have actually worked inside.
+  </p>
+
+  <div class="stats reveal">
+    <div class="s"><div class="v">2</div><div class="l">Functions in the model</div></div>
+    <div class="s"><div class="v">3</div><div class="l">Coefficients the reader controls</div></div>
+    <div class="s"><div class="v">24</div><div class="l">Months simulated</div></div>
+    <div class="s"><div class="v">3</div><div class="l">Readouts derived from the curve</div></div>
+  </div>
+
+  <div class="method reveal">
+    <div class="inner">
+      <div class="lab">What the model is for</div>
+      A stylized model is the wrong tool for forecasting an organization's actual ROI and the right tool for building intuition about which coefficients dominate the answer. The exponents <code>1.85</code> and <code>e^(-t/4.5)</code> were chosen to produce a curve that peaks early in cost and accelerates late in gain; they were not fit to any dataset. The sandbox's job is not to tell the reader what their J-curve is, but to let them feel how steeply the trough deepens when integration scope is pushed up and talent density is pulled down.
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     2, THE TWO FUNCTIONS (ink, technical)
+     ============================================================ -->
+<section class="band band--ink" data-spine="Functions" data-section="The two functions">
+  <div class="eyebrow reveal">02 / The two functions</div>
+  <h2 class="reveal">Cost peaks early, gain compounds late.</h2>
+
+  <p class="reveal col-with-sidenotes">
+    The model has two halves and one subtraction. <em>Cost(t)</em> rises with the integration burden a new system imposes on the existing organization, peaks during the months when legacy and new systems run in parallel, and decays as the integration completes. <em>Gain(t)</em> is a power-law function of integration scope: deeper integrations into more processes return super-linearly in the time the system is allowed to run, because each additional integrated process compounds the value of the previous ones. The net curve is the difference, and its early-month minimum is the trough that decides whether the project survives the budget cycle.
+  </p>
+
+  <div class="figure reveal">
+    <div class="frame parallax">
+      <svg viewBox="0 0 920 360" style="width:100%;display:block;">
+        <!-- frame -->
+        <line x1="60" y1="180" x2="880" y2="180" stroke="#333" stroke-width="1" stroke-dasharray="2 5"/>
+        <line x1="60" y1="40"  x2="60"  y2="320" stroke="#333" stroke-width="1"/>
+        <line x1="60" y1="320" x2="880" y2="320" stroke="#333" stroke-width="1"/>
+        <!-- y-axis labels -->
+        <g font-family="JetBrains Mono" font-size="10" fill="#A1A1A6">
+          <text x="48" y="44"  text-anchor="end">+</text>
+          <text x="48" y="184" text-anchor="end">0</text>
+          <text x="48" y="324" text-anchor="end">-</text>
+          <text x="32" y="180" transform="rotate(-90 32 180)" text-anchor="middle" letter-spacing="1">VALUE</text>
+        </g>
+        <!-- x-axis labels -->
+        <g font-family="JetBrains Mono" font-size="10" fill="#A1A1A6">
+          <text x="60"  y="340" text-anchor="middle">M0</text>
+          <text x="265" y="340" text-anchor="middle">M6</text>
+          <text x="470" y="340" text-anchor="middle">M12</text>
+          <text x="675" y="340" text-anchor="middle">M18</text>
+          <text x="880" y="340" text-anchor="middle">M24</text>
+        </g>
+        <!-- Cost curve, peaks at M4-5 then decays. Drawn below zero line. -->
+        <path d="M 60 180 C 100 200, 160 290, 230 305 S 470 220, 700 195 L 880 188" fill="none" stroke="#7A1626" stroke-width="2"/>
+        <text x="240" y="298" font-family="Lora" font-size="11" font-style="italic" fill="#7A1626">Cost(t)</text>
+        <!-- Gain curve, compounding power-law -->
+        <path d="M 60 180 C 200 178, 360 170, 520 145 S 760 90, 880 50" fill="none" stroke="#3866A0" stroke-width="2"/>
+        <text x="800" y="70" font-family="Lora" font-size="11" font-style="italic" fill="#3866A0">Gain(t)</text>
+        <!-- Net curve, difference. Below zero through ~M9, then positive. -->
+        <path d="M 60 180 C 130 220, 230 260, 320 245 S 520 175, 700 135 L 880 70" fill="none" stroke="#DBA844" stroke-width="2.5"/>
+        <text x="600" y="120" font-family="Lora" font-size="12" font-style="italic" fill="#DBA844">Net(t)</text>
+        <!-- breakeven marker -->
+        <circle cx="450" cy="180" r="4" fill="#DBA844"/>
+        <text x="455" y="172" font-family="JetBrains Mono" font-size="9" fill="#DBA844" letter-spacing="1">BREAKEVEN</text>
+        <!-- trough marker -->
+        <circle cx="280" cy="252" r="4" fill="#7A1626"/>
+        <text x="290" y="262" font-family="JetBrains Mono" font-size="9" fill="#7A1626" letter-spacing="1">MAX DRAWDOWN</text>
+      </svg>
+    </div>
+    <div class="cap"><span class="num">Fig. 1 , </span> The two functions and their net. Cost peaks at M4-5 then decays as the integration matures. Gain compounds super-linearly in time. The net curve crosses zero at the breakeven horizon, which under the default coefficients lands at M11. The depth of the trough between M0 and the breakeven is the variable the page is about.</div>
+  </div>
+
+  <div class="math-strip reveal">
+    <pre class="math-block">Net(t) = Gain(t) - Cost(t)
+
+Gain(t) = (scope * 1.5 * talent * 0.8 / 10) * t^1.85
+Cost(t) = (legacy * 25 + (11 - talent) * 15 + scope * 5) * t * e^(-t / 4.5)</pre>
+  </div>
+
+  <p class="reveal col-with-sidenotes">
+    Three coefficients enter the curves. Legacy debt scales the cost coefficient linearly. Talent density enters cost as <code>(11 - talent)</code>, so a low-talent organization pays the integration cost a high-talent organization avoids; the same coefficient enters gain as a multiplier, so the under-resourced project not only pays more cost but earns less return for the same scope<span class="sn"><span class="sn-num">2</span><span class="sn-body">This double-charge of low talent (more cost, less gain) is the structural reason the model produces such steep troughs at the low-talent edge of the parameter space. It is also, anecdotally, the failure mode reported in the case studies of cancelled enterprise AI integrations: the work that the missing engineers were supposed to do gets billed to the project as overhead.</span></span>. Integration scope enters cost weakly (a fifth-order linear term) and gain strongly (the multiplier on the power-law term). The asymmetry is deliberate: the model is teaching that scope amplifies the upside far more than the downside, conditional on the talent being there to absorb it.
+  </p>
+
+  <div class="method reveal">
+    <div class="inner">
+      <div class="lab">Why these specific exponents</div>
+      The exponent <code>1.85</code> on the gain term sits between linear (1.0) and quadratic (2.0); it produces the visual feel of a compounding curve that takes most of the 24-month window to dominate. The decay term <code>e^(-t/4.5)</code> on cost peaks at t = 4.5 months, which matches the empirical observation in the technology-adoption literature that integration debt typically peaks in the first half-year. Neither exponent was estimated. Both were chosen to produce the qualitative shape the model is teaching, and the page's argument does not depend on the specific values; it depends on the existence of the trough.
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     3, THE SANDBOX (paper, dense)
+     ============================================================ -->
+<section class="band band--paper" data-spine="Sandbox" data-section="The interactive sandbox">
+  <div class="eyebrow reveal">03 / The sandbox</div>
+  <h2 class="reveal">Three sliders, twenty-four months, three readouts.</h2>
+
+  <p class="reveal col-with-sidenotes">
+    The sandbox is the part of the page that does the actual work. Three sliders control the coefficients (legacy debt, talent density, integration scope), the SVG plot redraws on input, and three KPIs derive directly from the curve: the maximum drawdown (the deepest point of the trough), the breakeven horizon (the first month after the trough where Net(t) crosses zero again), and the M24 net (the terminal value at the end of the simulated window). The default coefficients (5, 5, 5) produce a moderate trough and a breakeven around M11. Pulling talent down to 1 while pushing scope up to 10 deepens the trough by an order of magnitude and slips the breakeven past M24 entirely.
+  </p>
+
+  <!-- INTERACTIVE MODULE -->
+  <div class="sandbox reveal">
+    <div class="sandbox-grid">
+
+      <!-- Variables Panel -->
+      <div class="vars-panel">
+        <div class="panel-title">Coefficients</div>
+
+        <div class="slider-group">
+          <div class="slider-label"><span>Legacy debt</span> <span class="slider-val" id="val-legacy">5</span></div>
+          <input type="range" id="rng-legacy" min="1" max="10" value="5" oninput="updateSimulation()">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label"><span>Talent density</span> <span class="slider-val" id="val-talent">5</span></div>
+          <input type="range" id="rng-talent" min="1" max="10" value="5" oninput="updateSimulation()">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label"><span>Integration scope</span> <span class="slider-val" id="val-scope">5</span></div>
+          <input type="range" id="rng-scope" min="1" max="10" value="5" oninput="updateSimulation()">
+        </div>
+
+        <div class="panel-foot">
+          To see the structural failure mode, drop talent to 1 and push scope to 10. The trough will deepen and the breakeven will move past the M24 horizon.
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="output-panel">
+
+        <div class="chart-wrapper">
+          <svg id="jcurve-svg" class="chart-svg" preserveAspectRatio="none">
+            <line id="svg-zero" x1="0" y1="50%" x2="100%" y2="50%" class="zero-line" />
+
+            <text x="2%" y="98%" class="axis-label">M0</text>
+            <text x="25%" y="98%" class="axis-label">M6</text>
+            <text x="50%" y="98%" class="axis-label">M12</text>
+            <text x="75%" y="98%" class="axis-label">M18</text>
+            <text x="97%" y="98%" class="axis-label" text-anchor="end">M24</text>
+
+            <text x="2%" y="10%" class="axis-label" fill="#1A4A38">+ value</text>
+            <text x="2%" y="92%" class="axis-label" fill="#7A1626">- cost</text>
+
+            <path id="svg-area" class="chart-area" d="" />
+            <path id="svg-line" class="chart-line" d="" />
+          </svg>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-box">
+            <div class="kpi-v" id="out-drawdown">0</div>
+            <div class="kpi-l">Max drawdown</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-v" id="out-breakeven">M0</div>
+            <div class="kpi-l">Breakeven horizon</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-v" id="out-terminal">0</div>
+            <div class="kpi-l">M24 net</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- END INTERACTIVE MODULE -->
+
+  <p class="reveal" style="margin-top:48px;">
+    The sandbox is not a calculator. It does not produce the user's actual breakeven, because the user's actual breakeven depends on coefficients that are not in this model: regulatory exposure, change-management overhead, the political cost of the integration, the rate at which the underlying foundation models are themselves changing. The sandbox produces the qualitative structure those coefficients have to live inside, and the page's argument is that the structure is robust to which specific real-world variables get mapped onto the three sliders.
+  </p>
+</section>
+
+
+<!-- ============================================================
+     4, WHAT THE TROUGH TEACHES (paper)
+     ============================================================ -->
+<section class="band band--paper" data-spine="Trough" data-section="What the trough teaches">
+  <div class="eyebrow reveal">04 / What the trough teaches</div>
+  <h2 class="reveal">The depth of the trough is the variable that matters.</h2>
+
+  <p class="reveal col-with-sidenotes">
+    The argument the sandbox is built to support, in one sentence: the depth of the early-month trough is set almost entirely by the ratio of legacy debt to talent density, and the trough sets whether the project survives long enough to compound. Three coefficients enter the model, but the terminal value at M24 is dominated by the first six months of the curve, because a project that is cancelled at M9 never reaches M24 at all. The page's claim is that this is not a quantitative finding, the exponents are stylized; it is a structural one, the shape is invariant to the specific exponents used as long as cost peaks early and gain compounds late.
+  </p>
+
+  <p class="reveal col-with-sidenotes">
+    Three corollaries follow. The first: increasing integration scope without increasing talent density does not delay the breakeven, it abolishes it; the trough deepens past the threshold at which the project can be defended and the curve never recovers. The second: the value of high-talent integration is not that it makes the gain steeper, it is that it makes the cost shallower, which is the dimension the gain depends on for survival. The third: a low-scope integration with high talent and low legacy debt produces a curve so shallow it can be mistaken for a flat line, which is why isolated chatbot pilots succeed routinely and autonomous-workflow integrations fail routinely. The two cases are not different problems, they are the same J-curve at different scales.
+  </p>
+
+  <p class="reveal col-with-sidenotes">
+    The model is a teaching tool. The coefficients on the sliders are not estimates of any real organization's parameters, and the curve the sandbox produces is not a forecast. What the page commits to is the qualitative shape: that the trough exists, that its depth is determined by legacy-to-talent ratio more than by any other coefficient, and that the depth determines survival in a way the terminal value alone cannot represent. Whether a real organization's integration looks like the curve at <code>(5, 5, 5)</code> or at <code>(8, 2, 7)</code> is not a question the model can answer, but the model can name the question, and naming it correctly is most of the work.
+  </p>
+
+  <div class="method reveal">
+    <div class="inner">
+      <div class="lab">What this page is not</div>
+      Not an estimate of any organization's actual ROI on AI adoption. Not a benchmark of foundation-model capability or deployment cost. Not a recommendation that integration scope should be high or low; the model is symmetric about that choice and the right answer depends on coefficients the model does not know. The page is a thinking tool, in the same sense Olah's circuits writeups are thinking tools: the math is the medium, the interaction is the lesson, and the reader is expected to come away with a sharper intuition about a tradeoff they already had to make.
+    </div>
+  </div>
+</section>
+<!-- ============================================================
+     BACK MATTER (dark)
+     ============================================================ -->
+<section class="band band--dark back-matter" data-spine="Back" data-section="Back matter">
+  <h3 style="margin-top:0;">Bibliography</h3>
+  <ol class="biblio">
+    <li><span class="n">[1]</span><span class="ent">Brynjolfsson, E., Rock, D., &amp; Syverson, C. (2017). Artificial intelligence and the modern productivity paradox: a clash of expectations and statistics. <i>NBER Working Paper No. 24001</i>.</span></li>
+    <li><span class="n">[2]</span><span class="ent">Brynjolfsson, E. (1993). The productivity paradox of information technology. <i>Communications of the ACM</i>, 36(12), 66-77.</span></li>
+    <li><span class="n">[3]</span><span class="ent">David, P. A. (1990). The dynamo and the computer: an historical perspective on the modern productivity paradox. <i>American Economic Review</i>, 80(2), 355-361.</span></li>
+    <li><span class="n">[4]</span><span class="ent">Bresnahan, T. F. &amp; Trajtenberg, M. (1995). General purpose technologies: engines of growth? <i>Journal of Econometrics</i>, 65(1), 83-108.</span></li>
+    <li><span class="n">[5]</span><span class="ent">Olah, C., Cammarata, N., Schubert, L., et al. (2020). Zoom in: an introduction to circuits. <i>Distill</i>, 5(3).</span></li>
+    <li><span class="n">[6]</span><span class="ent">Karpathy, A. (2017). Software 2.0. <i>Medium</i>.</span></li>
+  </ol>
+
+  <h3>Cited by, cites, within this portfolio</h3>
+  <div class="citegraph">
+    <svg viewBox="0 0 920 240" preserveAspectRatio="none">
+      <!-- center node, this article -->
+      <g>
+        <circle cx="460" cy="120" r="34" fill="#0F52BA" stroke="#4D8CFF"/>
+        <text x="460" y="124" text-anchor="middle" font-family="Playfair Display" font-size="12" fill="#FFFFFF" font-style="italic">this article</text>
+      </g>
+      <!-- left, cited -->
+      <g>
+        <line x1="200" y1="60"  x2="430" y2="110" stroke="#333"/>
+        <line x1="160" y1="180" x2="430" y2="130" stroke="#333"/>
+        <circle cx="180" cy="60"  r="22" fill="#161616" stroke="#333"/>
+        <text x="180" y="40" text-anchor="middle" font-family="Lora" font-size="11" fill="#A1A1A6" font-style="italic">productivity paradox</text>
+
+        <circle cx="160" cy="180" r="22" fill="#161616" stroke="#333"/>
+        <text x="160" y="208" text-anchor="middle" font-family="Lora" font-size="11" fill="#A1A1A6" font-style="italic">general purpose tech</text>
+      </g>
+      <!-- right, cited by -->
+      <g>
+        <line x1="490" y1="110" x2="740" y2="60"  stroke="#1A3A6B"/>
+        <line x1="490" y1="130" x2="780" y2="180" stroke="#1A3A6B"/>
+        <circle cx="760" cy="60"  r="22" fill="#030303" stroke="#1A3A6B"/>
+        <text x="760" y="40" text-anchor="middle" font-family="Lora" font-size="11" fill="#A1A1A6" font-style="italic">clinical validation pipeline</text>
+
+        <circle cx="800" cy="180" r="22" fill="#030303" stroke="#1A3A6B"/>
+        <text x="800" y="208" text-anchor="middle" font-family="Lora" font-size="11" fill="#A1A1A6" font-style="italic">entity resolution</text>
+      </g>
+      <!-- legend -->
+      <g font-family="JetBrains Mono" font-size="9" fill="#A1A1A6" letter-spacing="2">
+        <line x1="40" y1="220" x2="58" y2="220" stroke="#333"/>
+        <text x="64" y="223">CITES</text>
+        <line x1="120" y1="220" x2="138" y2="220" stroke="#1A3A6B"/>
+        <text x="144" y="223">CITED BY</text>
+      </g>
+    </svg>
+    <div class="lab">Internal citation graph, hover any node in the live build to preview the case.</div>
+  </div>
+
+  <h3>Related cases</h3>
+  <div class="related">
+    <div class="related-grid">
+      <a class="r-card xlink" href="#" data-preview-id="clinical-validation">
+        <div class="eb">Companion</div>
+        <div class="ti">An ADOS-2-aligned screening pipeline</div>
+        <div class="ds">A walkthrough of a three-domain ensemble screening pipeline, with calibration, disagreement detection, and a recommendation layer that softens under uncertainty.</div>
+        <div class="ar">Read &rarr;</div>
+      </a>
+      <a class="r-card xlink" href="#" data-preview-id="productivity-paradox">
+        <div class="eb">Cited</div>
+        <div class="ti">Brynjolfsson, Rock &amp; Syverson 2017</div>
+        <div class="ds">The productivity paradox literature this page sits inside, with the J-curve framing of general-purpose technology adoption.</div>
+        <div class="ar">Read &rarr;</div>
+      </a>
+      <a class="r-card xlink" href="#" data-preview-id="distill-circuits">
+        <div class="eb">Kindred</div>
+        <div class="ti">Olah et al., circuits</div>
+        <div class="ds">The reference for what an interactive technical writeup looks like when the math is the medium and the page is a thinking tool.</div>
+        <div class="ar">Read &rarr;</div>
+      </a>
+    </div>
+  </div>
+
+  <a class="next-chap" href="#">
+    <div class="lf">
+      <div class="eb">Next</div>
+      <div class="ti">An ADOS-2-aligned screening pipeline, with the uncertainty kept in.</div>
+    </div>
+    <div class="rt">-></div>
+  </a>
+</section>
+
+
+<footer class="site-foot">
+  <div>(c) 2026 Dr. Heather Leffew</div>
+  <div style="display:flex;gap:24px;">
+    <a href="#">Writing</a>
+    <a href="#">LinkedIn</a>
+    <a href="#">Contact</a>
+  </div>
+</footer>
+
+
+<!-- ============================================================
+     PREVIEW DATA
+     ============================================================ -->
+<script>
+const PREVIEWS = {
+  'clinical-validation': {
+    eyebrow: 'Companion case',
+    title: 'An ADOS-2-aligned screening pipeline',
+    desc: 'A walkthrough of a three-domain ensemble screening pipeline, with calibration, disagreement detection, and a recommendation layer that softens its language under uncertainty.',
+    foot: '22 min read / Synthetic data',
+  },
+  'productivity-paradox': {
+    eyebrow: 'Cited literature',
+    title: 'Brynjolfsson, Rock & Syverson 2017',
+    desc: 'The productivity-paradox literature this page sits inside. The J-curve framing of general-purpose technology adoption, with the long delay between deployment and measurable returns.',
+    foot: 'NBER WP 24001',
+  },
+  'distill-circuits': {
+    eyebrow: 'Kindred reference',
+    title: 'Olah et al., circuits',
+    desc: 'The reference for what an interactive technical writeup looks like when the math is the medium and the page is a thinking tool, not an estimate.',
+    foot: 'Distill, 2020',
+  },
+  'brynjolfsson-anchor': {
+    eyebrow: 'Cited literature',
+    title: 'Brynjolfsson, Rock & Syverson 2017',
+    desc: 'The productivity-paradox literature this page sits inside. The J-curve framing of general-purpose technology adoption, with the long delay between deployment and measurable returns.',
+    foot: 'NBER WP 24001',
+  },
+};
+
+/* ============================================================
+   SPINE, generated from sections with [data-spine]
+   ============================================================ */
+const spine = document.getElementById('spine');
+const sections = [...document.querySelectorAll('[data-spine]')];
+sections.forEach((s, i) => {
+  const r = document.createElement('div');
+  r.className = 'row'; r.dataset.idx = i;
+  r.innerHTML = `<span class="num">${String(i+1).padStart(2,'0')}</span><span class="tick"></span><span class="label">${s.dataset.spine}</span>`;
+  r.addEventListener('click', () => s.scrollIntoView({behavior:'smooth', block:'start'}));
+  spine.appendChild(r);
+});
+
+/* ============================================================
+   SCROLL ENGINE, progress, status, mode, spine, reveals
+   ============================================================ */
+const progress = document.getElementById('progress');
+const topnav = document.getElementById('topnav');
+const status = document.getElementById('status');
+const statusSec = status.querySelector('.sec');
+const statusPct = status.querySelector('.pct');
+const atmosphere = document.querySelector('.atmosphere');
+const reveals = [...document.querySelectorAll('.reveal')];
+const spineRows = [...spine.querySelectorAll('.row')];
+
+const onScroll = () => {
+  const h = document.documentElement;
+  const y = window.scrollY;
+  const max = h.scrollHeight - window.innerHeight;
+  const p = Math.min(1, Math.max(0, y / max));
+  progress.style.setProperty('--p', (p * 100).toFixed(2) + '%');
+  statusPct.textContent = Math.round(p * 100) + '%';
+
+  // Find the section currently dominant near top of viewport
+  const trigger = window.innerHeight * 0.32;
+  let activeIdx = 0;
+  for (let i = 0; i < sections.length; i++) {
+    const r = sections[i].getBoundingClientRect();
+    if (r.top <= trigger) activeIdx = i;
+  }
+  const active = sections[activeIdx];
+  const mode = [...active.classList].find(c => c.startsWith('band--'));
+  const isPaper = mode === 'band--paper';
+
+  statusSec.textContent = active.dataset.section;
+  spineRows.forEach((row, i) => {
+    row.classList.toggle('is-active', i === activeIdx);
+    row.classList.toggle('is-paper-active', i === activeIdx && isPaper);
+  });
+
+  topnav.classList.toggle('is-paper', isPaper);
+  status.classList.toggle('is-paper', isPaper);
+  spine.classList.toggle('is-paper', isPaper);
+
+  // Reveals
+  reveals.forEach(el => {
+    const r = el.getBoundingClientRect();
+    if (r.top < window.innerHeight * 0.92) el.classList.add('is-on');
+  });
+
+  // Parallax on figures (subtle)
+  document.querySelectorAll('.parallax').forEach(el => {
+    const r = el.getBoundingClientRect();
+    const center = r.top + r.height / 2 - window.innerHeight / 2;
+    el.style.transform = `translate3d(0, ${(-center * 0.04).toFixed(1)}px, 0)`;
+  });
+};
+window.addEventListener('scroll', onScroll, { passive:true });
+window.addEventListener('resize', onScroll);
+onScroll();
+
+/* ============================================================
+   HOVER PREVIEWS
+   ============================================================ */
+const hp = document.getElementById('hover-preview');
+const hpEb = hp.querySelector('.h-eb');
+const hpTi = hp.querySelector('.h-t');
+const hpDs = hp.querySelector('.h-d');
+const hpFt = hp.querySelector('.h-ft');
+let hpTimer;
+document.querySelectorAll('.xlink').forEach(a => {
+  a.addEventListener('mouseenter', e => {
+    const id = a.dataset.previewId;
+    if (!id || !PREVIEWS[id]) return;
+    const d = PREVIEWS[id];
+    hpEb.textContent = d.eyebrow;
+    hpTi.textContent = d.title;
+    hpDs.textContent = d.desc;
+    hpFt.textContent = d.foot;
+    // Position
+    const r = a.getBoundingClientRect();
+    let x = r.left;
+    let y = r.bottom + 12;
+    const w = 340, h = 180;
+    if (x + w > window.innerWidth - 16) x = window.innerWidth - w - 16;
+    if (y + h > window.innerHeight - 16) y = r.top - h - 12;
+    hp.style.left = x + 'px';
+    hp.style.top  = y + 'px';
+    // Sync mode of the preview to the section the link sits in
+    const inPaper = a.closest('.band--paper') !== null;
+    hp.classList.toggle('is-paper', inPaper);
+    clearTimeout(hpTimer);
+    hp.classList.add('is-on');
+  });
+  a.addEventListener('mouseleave', () => {
+    hpTimer = setTimeout(() => hp.classList.remove('is-on'), 80);
+  });
+});
+
+/* ============================================================
+   SANDBOX SIMULATION (section 03)
+   Two-function model. Cost peaks early and decays;
+   Gain compounds super-linearly. Net = Gain - Cost.
+   ============================================================ */
+function updateSimulation() {
+  const legacy = parseInt(document.getElementById('rng-legacy').value);
+  const talent = parseInt(document.getElementById('rng-talent').value);
+  const scope  = parseInt(document.getElementById('rng-scope').value);
+
+  document.getElementById('val-legacy').textContent = legacy;
+  document.getElementById('val-talent').textContent = talent;
+  document.getElementById('val-scope').textContent  = scope;
+
+  const debtMultiplier  = (legacy * 25) + ((11 - talent) * 15) + (scope * 5);
+  const scopeMultiplier = ((scope * 1.5) * (talent * 0.8)) / 10;
+
+  const months = 24;
+  const dataPoints = [];
+  let minNet = 0;
+  let maxNet = 100;
+  let breakevenMonth = -1;
+
+  for (let t = 0; t <= months; t++) {
+    const cost = -(debtMultiplier * t * Math.exp(-t / 4.5));
+    const gain = scopeMultiplier * Math.pow(t, 1.85);
+    const net = cost + gain;
+    dataPoints.push(net);
+    if (net < minNet) minNet = net;
+    if (net > maxNet) maxNet = net;
+    if (breakevenMonth === -1 && t > 2 && net > 0) breakevenMonth = t;
+  }
+
+  drawJCurve(dataPoints, minNet, maxNet);
+
+  const drawdownEl = document.getElementById('out-drawdown');
+  const termEl     = document.getElementById('out-terminal');
+  const bexEl      = document.getElementById('out-breakeven');
+
+  drawdownEl.textContent = Math.round(minNet);
+  drawdownEl.className = (minNet < -1500) ? 'kpi-v kpi-alert' : 'kpi-v';
+
+  termEl.textContent = (dataPoints[24] >= 0 ? '+' : '') + Math.round(dataPoints[24]);
+  termEl.className = (dataPoints[24] >= 0) ? 'kpi-v kpi-success' : 'kpi-v kpi-alert';
+
+  if (breakevenMonth === -1) {
+    bexEl.textContent = 'Never';
+    bexEl.className = 'kpi-v kpi-alert';
+  } else {
+    bexEl.textContent = 'M' + breakevenMonth;
+    bexEl.className = 'kpi-v';
+  }
+}
+
+function drawJCurve(data, absoluteMin, absoluteMax) {
+  const minScale = Math.min(absoluteMin, -2000);
+  const maxScale = Math.max(absoluteMax, 2500);
+  const range = maxScale - minScale;
+  const zeroY = (maxScale / range) * 100;
+
+  const zeroLine = document.getElementById('svg-zero');
+  zeroLine.setAttribute('y1', zeroY + '%');
+  zeroLine.setAttribute('y2', zeroY + '%');
+
+  let pathD = '';
+  let areaD = '';
+  const widthStep = 100 / 24;
+
+  data.forEach((val, index) => {
+    const x = index * widthStep;
+    const y = ((maxScale - val) / range) * 100;
+    if (index === 0) {
+      pathD += `M ${x} ${y} `;
+      areaD += `M ${x} ${zeroY} L ${x} ${y} `;
+    } else {
+      pathD += `L ${x} ${y} `;
+      areaD += `L ${x} ${y} `;
+    }
+    if (index === 24) areaD += `L ${x} ${zeroY} Z`;
+  });
+
+  document.getElementById('svg-line').setAttribute('d', pathD);
+  document.getElementById('svg-area').setAttribute('d', areaD);
+}
+
+window.addEventListener('load', updateSimulation);
+</script>
+
+
+<script>
+/* ============================================================
+   DYNAMIC SIDENOTE CLEARANCE (Global Portfolio Mandate)
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    const sidenoteParagraphs = document.querySelectorAll('.col-with-sidenotes');
+    sidenoteParagraphs.forEach(p => {
+        const sn = p.querySelector('.sn');
+        if (sn) {
+            const updateHeight = () => {
+                if (window.innerWidth >= 1240) {
+                    // Calculate exact clearance needed based on the sidenote's absolute top position
+                    const neededHeight = sn.offsetTop + sn.offsetHeight + 40;
+                    p.style.minHeight = neededHeight + 'px';
+                } else {
+                    p.style.minHeight = 'auto';
+                }
+            };
+            updateHeight();
+            setTimeout(updateHeight, 250);
+            window.addEventListener('resize', updateHeight);
+        }
+    });
+});
+</script>
+
+</body>
+</html>

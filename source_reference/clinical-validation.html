@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multimodal Clinical AI Validation | Portfolio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    ::selection { background-color: rgba(255,255,255,0.2); color: #FFFFFF; }
+
+    :root{
+  --obsidian: #030303;--charcoal: #1A1A1A;--brushed: #333333;
+  --platinum: #F5F5F7;--tungsten: #A1A1A6;--flare: #FFFFFF;
+  --sapphire-deep: #0F52BA;--sapphire: #4D8CFF;
+  --ruby-deep: #9B111E;--ruby: #E0115F;
+  --emerald-deep: #097969;--emerald: #50C878;
+  --citrine-deep: #B8A200;--citrine: #E4D00A;
+}
+
+    html { scroll-behavior: auto; }
+    body {
+      background: #030303;
+      color: #F5F5F7;
+      font-family: 'Lora', serif;
+      font-size: 15px;
+      line-height: 1.85;
+      overflow-x: hidden;
+    }
+
+    /* Z-base obsidian layer */
+    #z-base {
+      position: fixed; inset: 0;
+      background: #030303;
+      z-index: -40;
+    }
+
+    /* Three.js canvas */
+    #webgl-canvas {
+      position: fixed; inset: 0;
+      z-index: -30;
+      pointer-events: none;
+    }
+
+    /* Cursor halo */
+    #cursor-halo {
+      position: fixed;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 5;
+      mix-blend-mode: screen;
+      background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(77,140,255,0.03) 40%, transparent 70%);
+      transform: translate(-50%, -50%);
+      transition: opacity 0.3s;
+    }
+
+    /* Boot overlay */
+    #boot-overlay {
+      position: fixed; inset: 0;
+      background: #030303;
+      z-index: 9999;
+      pointer-events: none;
+    }
+
+    /* Nav spine */
+    #nav-spine {
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      width: 56px;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      background: linear-gradient(to right, rgba(3,3,3,1) 0%, rgba(3,3,3,0.7) 60%, rgba(3,3,3,0) 100%);
+      padding-left: 16px;
+    }
+    .nav-dot-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 5px;
+      cursor: pointer;
+    }
+    .nav-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(161,161,166,0.35);
+      transition: background 0.3s, transform 0.3s;
+    }
+    .nav-dot.active { background: #4D8CFF; transform: scale(1.4); }
+    .nav-dot-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(161,161,166,0);
+      transition: color 0.3s;
+      white-space: nowrap;
+    }
+    .nav-dot-wrap:hover .nav-dot-label { color: rgba(161,161,166,0.6); }
+    .nav-dot-wrap:hover .nav-dot { background: rgba(161,161,166,0.7); }
+
+    /* Page content */
+    #page-content {
+      position: relative;
+      z-index: 10;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 48px 100px 80px;
+    }
+
+    /* Hero */
+    #hero {
+      min-height: 72vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 0 60px;
+    }
+    .hero-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: #A1A1A6;
+      margin-bottom: 24px;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(30px, 4.5vw, 58px);
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      line-height: 1.18;
+      color: #FFFFFF;
+      max-width: 820px;
+      margin-bottom: 32px;
+    }
+    .hero-thesis {
+      font-family: 'Lora', serif;
+      font-size: 17px;
+      font-style: italic;
+      color: #A1A1A6;
+      max-width: 680px;
+      line-height: 1.7;
+    }
+
+    /* Section layout */
+    .case-section {
+      padding: 80px 0;
+      border-top: 1px solid rgba(51,51,51,0.35);
+    }
+    .section-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: #A1A1A6;
+      margin-bottom: 16px;
+    }
+    .section-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(24px, 3vw, 40px);
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      color: #FFFFFF;
+      margin-bottom: 32px;
+      max-width: 700px;
+    }
+    .prose { max-width: 680px; color: #F5F5F7; }
+    .prose p { margin-bottom: 20px; }
+
+    /* Two-column layout */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: start;
+    }
+    .three-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 24px;
+    }
+
+    /* Glass panels */
+    .glass-panel {
+      position: relative;
+      background: linear-gradient(135deg, rgba(26,26,26,0.65) 0%, rgba(3,3,3,0.4) 100%);
+      border: 1px solid rgba(51,51,51,0.5);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      padding: 40px;
+      overflow: hidden;
+      transition: backdrop-filter 0.6s, border-color 0.6s, box-shadow 0.6s;
+    }
+    .glass-panel::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, rgba(3,3,3,0.92) 0%, rgba(3,3,3,0.85) 70%, rgba(3,3,3,0) 100%);
+      opacity: 0.5;
+      pointer-events: none;
+      border-radius: 12px;
+    }
+    .glass-panel::after {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(to right, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 50%, transparent 100%);
+      pointer-events: none;
+    }
+    .glass-panel:hover {
+      backdrop-filter: blur(12px) brightness(1.15);
+      border-color: rgba(77,140,255,0.25);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 20px 0 rgba(77,140,255,0.06);
+    }
+
+    /* Stat cards */
+    .stat-card {
+      position: relative;
+      background: linear-gradient(180deg, rgba(26,26,26,0.5) 0%, rgba(3,3,3,0.3) 100%);
+      border: 1px solid rgba(51,51,51,0.4);
+      border-radius: 8px;
+      backdrop-filter: blur(8px);
+      padding: 24px;
+      overflow: hidden;
+      transition: backdrop-filter 0.4s, border-color 0.4s, box-shadow 0.4s;
+    }
+    .stat-card:hover {
+      backdrop-filter: blur(8px) brightness(1.15);
+      border-color: rgba(77,140,255,0.2);
+      box-shadow: inset 0 0 12px rgba(77,140,255,0.03);
+    }
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 30px;
+      font-weight: 500;
+      color: #FFFFFF;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #A1A1A6;
+    }
+
+    /* Stats row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 48px;
+    }
+
+    /* Data container */
+    .data-wrap {
+      background: linear-gradient(180deg, rgba(26,26,26,0.55) 0%, rgba(3,3,3,0.35) 100%);
+      border: 1px solid rgba(51,51,51,0.45);
+      border-radius: 8px;
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Toggle buttons */
+    .toggle-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .toggle-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #A1A1A6;
+      background: rgba(51,51,51,0.3);
+      border: 1px solid rgba(51,51,51,0.5);
+      border-radius: 4px;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+    .toggle-btn.active {
+      color: #4D8CFF;
+      background: rgba(77,140,255,0.12);
+      border-color: rgba(77,140,255,0.4);
+    }
+    .toggle-btn:hover:not(.active) {
+      color: #F5F5F7;
+      border-color: rgba(161,161,166,0.4);
+    }
+
+    /* Staircase chart */
+    .staircase-wrap { position: relative; }
+    .staircase-labels {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 12px;
+    }
+    .stair-label-group { text-align: center; width: 25%; }
+    .stair-label-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #A1A1A6;
+    }
+    .stair-label-sub {
+      font-family: 'Lora', serif;
+      font-size: 11px;
+      color: rgba(161,161,166,0.6);
+      margin-top: 2px;
+    }
+
+    /* Arc gauge containers */
+    .arc-trio {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .arc-card {
+      background: linear-gradient(180deg, rgba(26,26,26,0.5) 0%, rgba(3,3,3,0.3) 100%);
+      border: 1px solid rgba(51,51,51,0.4);
+      border-radius: 8px;
+      padding: 20px 16px 16px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .arc-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #A1A1A6;
+      margin-bottom: 8px;
+    }
+    .arc-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 500;
+      color: #FFFFFF;
+      margin-top: 4px;
+    }
+    .arc-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(161,161,166,0.6);
+      margin-top: 4px;
+    }
+    .meta-readout {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .meta-item {
+      background: rgba(26,26,26,0.4);
+      border: 1px solid rgba(51,51,51,0.3);
+      border-radius: 6px;
+      padding: 14px;
+      text-align: center;
+    }
+    .meta-item-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #A1A1A6;
+      margin-bottom: 6px;
+    }
+    .meta-item-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 500;
+      color: #FFFFFF;
+    }
+    .meta-flag {
+      display: inline-block;
+      margin-top: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 3px;
+    }
+    .flag-review { background: rgba(244,63,94,0.2); color: #E0115F; border: 1px solid rgba(244,63,94,0.3); }
+    .flag-ok { background: rgba(77,140,255,0.15); color: #4D8CFF; border: 1px solid rgba(77,140,255,0.3); }
+
+    /* Calibration curve */
+    .calib-axis-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      fill: #A1A1A6;
+    }
+    .calib-legend {
+      display: flex;
+      gap: 20px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-swatch {
+      width: 24px; height: 2px;
+    }
+    .legend-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #A1A1A6;
+    }
+
+    /* Uncertainty zone track */
+    .zone-track-wrap { position: relative; margin: 24px 0; }
+    .zone-track {
+      height: 12px;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      position: relative;
+    }
+    .zone-seg {
+      height: 100%;
+      transition: opacity 0.3s;
+    }
+    .zone-high { background: linear-gradient(to right, #0F52BA, #4D8CFF); flex: 0 0 25%; }
+    .zone-mod { background: linear-gradient(to right, #A67C00, #c49400); flex: 0 0 25%; }
+    .zone-low { background: linear-gradient(to right, #E0115F, #9B111E); flex: 0 0 50%; }
+    .zone-marker {
+      position: absolute;
+      top: -4px;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      box-shadow: 0 0 8px rgba(255,255,255,0.4);
+      transform: translateX(-50%);
+      transition: left 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .zone-tick-row {
+      display: flex;
+      position: relative;
+      height: 20px;
+      margin-top: 6px;
+    }
+    .zone-tick {
+      position: absolute;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      color: #A1A1A6;
+      transform: translateX(-50%);
+    }
+    .zone-bands {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-top: 32px;
+    }
+    .zone-band-card {
+      border: 1px solid rgba(51,51,51,0.4);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+    .zone-band-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .zone-band-range {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 500;
+      color: #FFFFFF;
+      margin-bottom: 8px;
+    }
+    .zone-band-desc {
+      font-family: 'Lora', serif;
+      font-size: 11px;
+      color: rgba(161,161,166,0.8);
+      line-height: 1.6;
+    }
+
+    /* Principle cards */
+    .principles-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .principle-card {
+      background: linear-gradient(135deg, rgba(26,26,26,0.55) 0%, rgba(3,3,3,0.35) 100%);
+      border: 1px solid rgba(51,51,51,0.4);
+      border-radius: 8px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.4s, box-shadow 0.4s;
+    }
+    .principle-card:hover {
+      border-color: rgba(77,140,255,0.25);
+      box-shadow: 0 0 16px rgba(77,140,255,0.04);
+    }
+    .principle-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #4D8CFF;
+      margin-bottom: 10px;
+    }
+    .principle-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: #FFFFFF;
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+    .principle-body {
+      font-family: 'Lora', serif;
+      font-size: 13px;
+      color: rgba(161,161,166,0.9);
+      line-height: 1.7;
+    }
+
+    /* Clip-path reveal containers */
+    .reveal-panel {
+      clip-path: inset(0 100% 0 0);
+    }
+
+    /* Back link */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #A1A1A6;
+      text-decoration: none;
+      margin-bottom: 48px;
+      margin-top: 24px;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: #F5F5F7; }
+
+    /* Glow ring for mouse proximity */
+    .glow-ring {
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      border: 1px solid transparent;
+      background: transparent;
+    }
+
+    @media (max-width: 768px) {
+      #page-content { padding: 0 24px 60px 24px; }
+      .glass-panel { padding: 24px; }
+      .two-col { grid-template-columns: 1fr; }
+      .three-col { grid-template-columns: 1fr; }
+      .arc-trio { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .principles-grid { grid-template-columns: 1fr; }
+      .meta-readout { grid-template-columns: 1fr; }
+      #nav-spine { display: none; }
+    }
+  
+/* GLOBAL NAV & FOOTER */
+.global-nav { position: fixed; top: 0; left: 0; right: 0; height: 72px; padding: 0 48px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; background: linear-gradient(to bottom, rgba(3,3,3,0.95), transparent); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,255,255,0.05); transform: translateY(-100%); animation: navSlideIn 0.8s 0.5s forwards ease-out; }
+@keyframes navSlideIn { to { transform: translateY(0); } }
+.nav-brand { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--flare); text-decoration: none; font-weight: 600; letter-spacing: 0.05em; margin: 0; padding: 0;}
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-link { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; color: var(--tungsten); text-decoration: none; letter-spacing: 0.1em; transition: color 0.3s; }
+.nav-link:hover { color: var(--sapphire); }
+.nav-link.btn-back { display: flex; align-items: center; gap: 8px; color: var(--flare); border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 4px; transition: all 0.3s; }
+.nav-link.btn-back:hover { background: var(--flare); color: var(--obsidian); }
+.global-footer { border-top: 1px solid rgba(255,255,255,0.05); padding: 60px 48px; display: flex; justify-content: space-between; align-items: center; background: rgba(3,3,3,0.3); z-index: 10; position: relative; margin-top: 60px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--tungsten); letter-spacing: 0.1em; text-transform: uppercase; }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a { color: var(--tungsten); text-decoration: none; transition: color 0.3s; }
+.footer-links a:hover { color: var(--flare); }
+@media(max-width:900px){ .global-nav{padding: 0 24px;} .nav-links{gap: 16px;} .global-footer{flex-direction: column; gap: 24px; padding: 40px 24px; text-align: center;} }
+
+/* ============================================================
+   MASTER GRID & PORTRAIT MODE POLISH
+   ============================================================ */
+:root { --grid-left: max(32px, calc(50vw - 540px)); }
+@media (min-width: 1360px) { :root { --grid-left: max(260px, calc(50vw - 540px)); } }
+
+@media (min-width: 1240px) {
+  section.band:not(.front) {
+    display: grid;
+    grid-template-columns: var(--grid-left) 680px 400px minmax(16px, 1fr);
+    align-items: start;
+  }
+  section.band:not(.front) > * {
+    grid-column: 2 / 3;
+    margin-left: 0 !important; 
+    margin-right: 0 !important;
+  }
+  section.band:not(.front) > .col-wide, 
+  section.band:not(.front) > .stat-grid, 
+  section.band:not(.front) > .figure, 
+  section.band:not(.front) > .report-prose {
+    grid-column: 2 / 4;
+    width: 100%; 
+    max-width: none;
+  }
+  .stat-grid { justify-content: start !important; }
+}
+
+@media (min-width: 1180px) and (max-width: 1359px) {
+  #spine {
+    width: 44px; overflow: hidden; white-space: nowrap;
+    transition: width 0.4s cubic-bezier(0.16,1,0.3,1), background 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+  #spine:hover { width: 250px; }
+}
+@media (min-width: 1360px) {
+  #spine { width: auto; overflow: visible; }
+}
+
+/* Portrait Mode Space Fix */
+.front { min-height: clamp(400px, 80vh, 850px) !important; justify-content: center !important; }
+
+</style>
+
+</head>
+<body>
+  <div id="z-base"></div>
+  <canvas id="webgl-canvas"></canvas>
+  <div id="cursor-halo"></div>
+  <div id="boot-overlay"></div>
+
+  <!-- GLOBAL NAV -->
+  <header class="global-nav">
+    <a href="index.html" class="nav-brand">Dr. Heather Leffew</a>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link btn-back"><span>&larr;</span> Portfolio Index</a>
+    </div>
+  </header>
+
+  <nav id="nav-spine">
+    <div class="nav-dot-wrap" data-target="hero">
+      <div class="nav-dot active"></div>
+      <span class="nav-dot-label">Overview</span>
+    </div>
+    <div class="nav-dot-wrap" data-target="context">
+      <div class="nav-dot"></div>
+      <span class="nav-dot-label">Context</span>
+    </div>
+    <div class="nav-dot-wrap" data-target="domains">
+      <div class="nav-dot"></div>
+      <span class="nav-dot-label">Domains</span>
+    </div>
+    <div class="nav-dot-wrap" data-target="fusion">
+      <div class="nav-dot"></div>
+      <span class="nav-dot-label">Fusion</span>
+    </div>
+    <div class="nav-dot-wrap" data-target="calibration">
+      <div class="nav-dot"></div>
+      <span class="nav-dot-label">Calibration</span>
+    </div>
+    <div class="nav-dot-wrap" data-target="uncertainty">
+      <div class="nav-dot"></div>
+      <span class="nav-dot-label">Uncertainty</span>
+    </div>
+    <div class="nav-dot-wrap" data-target="principles">
+      <div class="nav-dot"></div>
+      <span class="nav-dot-label">Principles</span>
+    </div>
+  </nav>
+
+  <div id="page-content">
+
+    <!-- HERO -->
+    <section id="hero">
+      <p class="hero-eyebrow">Case 07 &middot; Research &middot; Clinical AI</p>
+      <h1 class="hero-title">Multimodal clinical AI validation with surfaced uncertainty</h1>
+      <p class="hero-thesis">A late-fusion multimodal pipeline with per-modality Platt and isotonic calibration produces clinical reports where the algorithm operates strictly as an assistant.</p>
+    </section>
+
+    <!-- CONTEXT -->
+    <section id="context" class="case-section">
+      <p class="section-eyebrow">Problem Space</p>
+      <h2 class="section-heading">Identifying the clinical measurement variance</h2>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-val" data-target="4">0</div>
+          <div class="stat-label">Behavioral domains</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" data-target="9">0</div>
+          <div class="stat-label">ADOS-2 items mapped</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" data-target="3">0</div>
+          <div class="stat-label">Confidence levels</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" data-target="4">0</div>
+          <div class="stat-label">Model variants trained</div>
+        </div>
+      </div>
+
+      <div class="glass-panel reveal-panel">
+        <div class="prose">
+          <p>In real clinical settings, autism isn't a simple binary. Our synthetic data shows that 60 percent to 80 percent of behavioral signals overlap perfectly between ASD and non-ASD children. When you add in the natural noise of a restless toddler in an assessment room, a simple binary machine learning classification completely fails. It's just too brittle.</p>
+          <p>If an AI simply spits out a '0.74 probability of autism', that's useless to a clinician. It strips away all the context. Did the model see poor eye contact, or repetitive hand flapping? Did those signals contradict each other? To fix this, our pipeline outputs a structured evidence summary. It forces the system to quantify exactly which behaviors are present and how far they deviate from the norm, mapping directly to standard clinical observation rubrics.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURE DOMAINS -->
+    <section id="domains" class="case-section">
+      <p class="section-eyebrow">Behavioral Architecture</p>
+      <h2 class="section-heading">Isolated feature domains</h2>
+
+      <div class="two-col">
+        <div class="prose">
+          <p>To achieve this, we split the architecture into separate, independent modeling streams. We evaluate Social Engagement by tracking continuous variables like gaze-to-face percentage and mutual gaze. We evaluate Communication by isolating how long it takes a child to respond to their name. And we evaluate Restricted Behavior by tracking how much time is spent in functional play versus repetitive motion loops.</p>
+          <p>Why build separate streams? Because forcing all of these signals into a single, massive neural network flattens everything into a black box. By keeping each domain in its own isolated execution environment, we preserve the specific behavioral vocabularies needed for accurate clinical documentation.</p>
+        </div>
+        <div>
+          <div class="data-wrap">
+            <div class="toggle-row">
+              <button class="toggle-btn active" onclick="setStairView('importance')">Clinical Primacy</button>
+              <button class="toggle-btn" onclick="setStairView('ados')">ADOS Items</button>
+            </div>
+            <div class="staircase-wrap">
+              <svg id="staircase-svg" viewBox="0 0 500 260" style="width:100%;overflow:visible;">
+                <!-- Fill area -->
+                <defs>
+                  <linearGradient id="stair-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#4D8CFF" stop-opacity="0.18"/>
+                    <stop offset="100%" stop-color="#030303" stop-opacity="0.1"/>
+                  </linearGradient>
+                  <linearGradient id="stair-grad2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#0F52BA" stop-opacity="0.25"/>
+                    <stop offset="100%" stop-color="#030303" stop-opacity="0.1"/>
+                  </linearGradient>
+                </defs>
+                <!-- Background fill -->
+                <path id="stair-fill" d="M 30 235 H 155 V 190 H 280 V 145 H 405 V 90 H 475 V 235 Z"
+                  fill="url(#stair-grad)" opacity="0"/>
+                <!-- Main staircase outline path -->
+                <path id="stair-line" d="M 30 235 H 155 V 190 H 280 V 145 H 405 V 90 H 475"
+                  fill="none" stroke="#4D8CFF" stroke-width="2"
+                  stroke-dasharray="900" stroke-dashoffset="900"/>
+                <!-- Step dots -->
+                <circle id="sd1" cx="155" cy="190" r="5" fill="#4D8CFF" opacity="0"/>
+                <circle id="sd2" cx="280" cy="145" r="5" fill="#4D8CFF" opacity="0"/>
+                <circle id="sd3" cx="405" cy="90" r="5" fill="#4D8CFF" opacity="0"/>
+                <!-- Step value labels -->
+                <text id="sv0" x="92" y="222" font-family="JetBrains Mono" font-size="10" fill="#A1A1A6" text-anchor="middle" opacity="0" class="stair-val-importance">derived</text>
+                <text id="sv1" x="217" y="177" font-family="JetBrains Mono" font-size="10" fill="#A1A1A6" text-anchor="middle" opacity="0" class="stair-val-importance">B1, B2, A4</text>
+                <text id="sv2" x="342" y="132" font-family="JetBrains Mono" font-size="10" fill="#A1A1A6" text-anchor="middle" opacity="0" class="stair-val-importance">C1, D1, D4</text>
+                <text id="sv3" x="440" y="77" font-family="JetBrains Mono" font-size="10" fill="#A1A1A6" text-anchor="middle" opacity="0" class="stair-val-importance">A1, A2, A7</text>
+                <!-- ADOS count labels (alternate view) -->
+                <text x="92" y="222" font-family="JetBrains Mono" font-size="10" fill="#A1A1A6" text-anchor="middle" opacity="0" class="stair-val-ados">18+ features</text>
+                <text x="217" y="177" font-family="JetBrains Mono" font-size="10" fill="#A1A1A6" text-anchor="middle" opacity="0" class="stair-val-ados">3 features</text>
+                <text x="342" y="132" font-family="JetBrains Mono" font-size="10" fill="#A1A1A6" text-anchor="middle" opacity="0" class="stair-val-ados">3 features</text>
+                <text x="440" y="77" font-family="JetBrains Mono" font-size="10" fill="#A1A1A6" text-anchor="middle" opacity="0" class="stair-val-ados">4 features</text>
+                <!-- Floor line -->
+                <line x1="20" y1="235" x2="480" y2="235" stroke="rgba(51,51,51,0.4)" stroke-width="1"/>
+              </svg>
+              <div class="staircase-labels">
+                <div class="stair-label-group">
+                  <div class="stair-label-name">Temporal</div>
+                  <div class="stair-label-sub">derived variability</div>
+                </div>
+                <div class="stair-label-group">
+                  <div class="stair-label-name">Communication</div>
+                  <div class="stair-label-sub">3 ADOS-2 items</div>
+                </div>
+                <div class="stair-label-group">
+                  <div class="stair-label-name">Repetitive</div>
+                  <div class="stair-label-sub">3 ADOS-2 items</div>
+                </div>
+                <div class="stair-label-group">
+                  <div class="stair-label-name">Social</div>
+                  <div class="stair-label-sub">core diagnostic</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FUSION -->
+    <section id="fusion" class="case-section">
+      <p class="section-eyebrow">Architecture</p>
+      <h2 class="section-heading">Late fusion ensemble structures</h2>
+
+      <div class="two-col">
+        <div class="prose">
+          <p>Under the hood, we deploy dedicated XGBoost models across each of these behavioral subsets. This gives us three distinct probability risk layers: one for social, one for communication, and one for repetitive behaviors. Finally, a secondary 'meta-learner' takes these three independent probabilities and intelligently fuses them together to form a final prediction.</p>
+          <p>This 'late-fusion' structure allows us to explicitly capture algorithmic disagreement. If the model sees severe social and repetitive symptoms, but completely typical communication skills, the meta-learner immediately flags the divergence. This triggers an anomaly alert on the dashboard, strictly requiring a human expert to review the complicated case.</p>
+        </div>
+        <div>
+          <div class="data-wrap">
+            <div class="toggle-row">
+              <button class="toggle-btn active" onclick="setFusionCase('A')">Case A: Disagreement</button>
+              <button class="toggle-btn" onclick="setFusionCase('B')">Case B: Consensus</button>
+            </div>
+            <div class="arc-trio">
+              <!-- Social arc -->
+              <div class="arc-card">
+                <div class="arc-label">Social</div>
+                <svg viewBox="0 0 200 130" style="width:100%;">
+                  <path d="M 20 110 A 80 80 0 1 1 180 110" fill="none" stroke="rgba(51,51,51,0.3)" stroke-width="10" stroke-linecap="round"/>
+                  <path id="arc-social" d="M 20 110 A 80 80 0 1 1 180 110" fill="none" stroke="#4D8CFF" stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+                </svg>
+                <div class="arc-value"><span id="arc-social-val">0</span>%</div>
+                <div class="arc-sub">p(ASD | social)</div>
+              </div>
+              <!-- Comm arc -->
+              <div class="arc-card">
+                <div class="arc-label">Communication</div>
+                <svg viewBox="0 0 200 130" style="width:100%;">
+                  <path d="M 20 110 A 80 80 0 1 1 180 110" fill="none" stroke="rgba(51,51,51,0.3)" stroke-width="10" stroke-linecap="round"/>
+                  <path id="arc-comm" d="M 20 110 A 80 80 0 1 1 180 110" fill="none" stroke="#A67C00" stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+                </svg>
+                <div class="arc-value"><span id="arc-comm-val">0</span>%</div>
+                <div class="arc-sub">p(ASD | comm)</div>
+              </div>
+              <!-- RRB arc -->
+              <div class="arc-card">
+                <div class="arc-label">Repetitive</div>
+                <svg viewBox="0 0 200 130" style="width:100%;">
+                  <path d="M 20 110 A 80 80 0 1 1 180 110" fill="none" stroke="rgba(51,51,51,0.3)" stroke-width="10" stroke-linecap="round"/>
+                  <path id="arc-rrb" d="M 20 110 A 80 80 0 1 1 180 110" fill="none" stroke="#4D8CFF" stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+                </svg>
+                <div class="arc-value"><span id="arc-rrb-val">0</span>%</div>
+                <div class="arc-sub">p(ASD | rrb)</div>
+              </div>
+            </div>
+            <!-- Meta-learner output -->
+            <div class="meta-readout">
+              <div class="meta-item">
+                <div class="meta-item-label">Meta estimate</div>
+                <div class="meta-item-val" id="meta-est">0.65</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-item-label">Std across domains</div>
+                <div class="meta-item-val" id="meta-std">0.24</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-item-label">Status</div>
+                <div style="margin-top:6px;">
+                  <span class="meta-flag flag-review" id="meta-flag">Review flag</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CALIBRATION -->
+    <section id="calibration" class="case-section">
+      <p class="section-eyebrow">Calibration</p>
+      <h2 class="section-heading">Non-parametric monotone calibration</h2>
+
+      <div class="two-col">
+        <div class="prose">
+          <p>Standard gradient-boosted models have a major flaw: they are wildly overconfident. Their raw outputs get mathematically squashed toward 0 percent or 100 percent, completely misrepresenting the true uncertainty of a prediction. For a low-stakes app, that's fine. But in a clinical setting, where probabilities communicate medical evidence, an overconfident model is incredibly dangerous.</p>
+          <p>To fix this, we have to formally calibrate the probabilities. We use Platt scaling to map the raw scores onto a smooth logistic curve, and isotonic regression to strictly enforce that higher model scores always correspond to legitimately higher diagnostic risk. This ensures our percentages actually reflect reality, without forcing the data into unnatural mathematical assumptions.</p>
+          <p>Crucially, we calibrate each behavioral stream independently. The baseline distributions for communication delays look very different from the baseline distributions of repetitive behaviors. If we tried to apply one giant, unified correction across all models simultaneously, it would mathematically corrupt the entire landscape.</p>
+        </div>
+        <div>
+          <div class="data-wrap">
+            <div class="toggle-row">
+              <button class="toggle-btn active" onclick="setCalib('raw')">Raw GBM</button>
+              <button class="toggle-btn" onclick="setCalib('platt')">Platt Scaled</button>
+              <button class="toggle-btn" onclick="setCalib('isotonic')">Isotonic</button>
+            </div>
+            <svg id="calib-svg" viewBox="0 0 300 220" style="width:100%;">
+              <defs>
+                <linearGradient id="calib-grad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#4D8CFF" stop-opacity="0.1"/>
+                  <stop offset="100%" stop-color="#4D8CFF" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- Grid lines -->
+              <line x1="30" y1="20" x2="30" y2="190" stroke="rgba(51,51,51,0.4)" stroke-width="1"/>
+              <line x1="30" y1="190" x2="280" y2="190" stroke="rgba(51,51,51,0.4)" stroke-width="1"/>
+              <line x1="30" y1="105" x2="280" y2="105" stroke="rgba(51,51,51,0.2)" stroke-width="1" stroke-dasharray="4,4"/>
+              <line x1="155" y1="20" x2="155" y2="190" stroke="rgba(51,51,51,0.2)" stroke-width="1" stroke-dasharray="4,4"/>
+              <!-- Perfect calibration diagonal -->
+              <line x1="30" y1="190" x2="280" y2="20" stroke="rgba(51,51,51,0.6)" stroke-width="1.5" stroke-dasharray="6,4"/>
+              <!-- Axis labels -->
+              <text x="155" y="210" font-family="JetBrains Mono" font-size="8" fill="#A1A1A6" text-anchor="middle" letter-spacing="1">PREDICTED PROBABILITY</text>
+              <text x="12" y="105" font-family="JetBrains Mono" font-size="8" fill="#A1A1A6" text-anchor="middle" letter-spacing="1" transform="rotate(-90 12 105)">OBSERVED FREQ</text>
+              <!-- Tick labels -->
+              <text x="30" y="200" font-family="JetBrains Mono" font-size="7" fill="#A1A1A6" text-anchor="middle">0</text>
+              <text x="155" y="200" font-family="JetBrains Mono" font-size="7" fill="#A1A1A6" text-anchor="middle">0.5</text>
+              <text x="280" y="200" font-family="JetBrains Mono" font-size="7" fill="#A1A1A6" text-anchor="middle">1.0</text>
+              <text x="22" y="193" font-family="JetBrains Mono" font-size="7" fill="#A1A1A6" text-anchor="middle">0</text>
+              <text x="22" y="108" font-family="JetBrains Mono" font-size="7" fill="#A1A1A6" text-anchor="middle">.5</text>
+              <text x="22" y="23" font-family="JetBrains Mono" font-size="7" fill="#A1A1A6" text-anchor="middle">1</text>
+              <!-- Raw GBM curve (overconfident) -->
+              <path id="curve-raw" d="M 30 190 C 55 188 70 175 100 162 C 130 149 155 112 155 105 C 155 98 180 61 210 48 C 240 35 265 22 280 20"
+                fill="none" stroke="#E0115F" stroke-width="2.5" stroke-linecap="round"
+                stroke-dasharray="500" stroke-dashoffset="500"/>
+              <!-- Platt curve -->
+              <path id="curve-platt" d="M 30 190 C 55 186 75 170 110 150 C 140 132 155 107 155 105 C 155 103 170 78 205 58 C 240 38 265 22 280 20"
+                fill="none" stroke="#A67C00" stroke-width="2.5" stroke-linecap="round" opacity="0"
+                stroke-dasharray="500" stroke-dashoffset="0"/>
+              <!-- Isotonic curve -->
+              <path id="curve-isotonic" d="M 30 190 L 55 190 L 55 172 L 90 172 L 90 147 L 130 147 L 130 115 L 155 115 L 155 95 L 185 95 L 185 62 L 220 62 L 220 38 L 255 38 L 255 22 L 280 22"
+                fill="none" stroke="#4D8CFF" stroke-width="2.5" stroke-linecap="round" opacity="0"
+                stroke-dasharray="800" stroke-dashoffset="0"/>
+            </svg>
+            <div class="calib-legend">
+              <div class="legend-item">
+                <div class="legend-swatch" style="background:#E0115F; height:2px;"></div>
+                <span class="legend-label">Raw GBM</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-swatch" style="background:#A67C00; height:2px;"></div>
+                <span class="legend-label">Platt scaled</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-swatch" style="background:#4D8CFF; height:2px;"></div>
+                <span class="legend-label">Isotonic</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-swatch" style="background:rgba(51,51,51,0.6); height:1px; border-top:1px dashed rgba(51,51,51,0.8);"></div>
+                <span class="legend-label">Perfect</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- UNCERTAINTY -->
+    <section id="uncertainty" class="case-section">
+      <p class="section-eyebrow">Uncertainty Surfacing</p>
+      <h2 class="section-heading">Explicit uncertainty surfacing</h2>
+
+      <div class="two-col">
+        <div class="prose">
+          <p>To quantify uncertainty, the pipeline calculates the standard deviation across the primary estimators. If the models vehemently disagree with one another (a standard deviation above 0.20), the system literally halts. It refuses to output a falsely confident prediction, and instead outputs the variance itself as the clinical conclusion, triggering an expert review.</p>
+          <p>The user interface translates this math directly into diagnostic confidence. Standard deviations below 0.10 return 'High Confidence', while anything above 0.20 triggers a 'Low Confidence' warning. When an anomaly is flagged, the clinical report highlights exactly which behavioral features triggered the confusion, pinpointing the metrics that deviated the furthest from the norm.</p>
+          <p>Conversely, features that perfectly match typical neurodevelopmental baselines are compiled as positive counterpoints. Ultimately, the model doesn't make a diagnosis. It simply synthesizes the noisy, contradictory evidence into a mathematically sound framework, allowing the human clinician to make the final call.</p>
+        </div>
+        <div>
+          <div class="data-wrap">
+            <div class="toggle-row">
+              <button class="toggle-btn active" onclick="setUncertaintyCase('A')">Case A: Review Flag</button>
+              <button class="toggle-btn" onclick="setUncertaintyCase('B')">Case B: High Confidence</button>
+            </div>
+            <!-- Zone track -->
+            <div class="zone-track-wrap" style="margin-top:12px;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#A1A1A6;margin-bottom:10px;">
+                Inter-model standard deviation
+              </div>
+              <div style="position:relative;">
+                <div class="zone-track">
+                  <div class="zone-seg zone-high"></div>
+                  <div class="zone-seg zone-mod"></div>
+                  <div class="zone-seg zone-low"></div>
+                </div>
+                <div class="zone-marker" id="zone-marker" style="left:60%;"></div>
+              </div>
+              <div class="zone-tick-row">
+                <span class="zone-tick" style="left:0%">0.00</span>
+                <span class="zone-tick" style="left:25%">0.10</span>
+                <span class="zone-tick" style="left:50%">0.20</span>
+                <span class="zone-tick" style="left:75%">0.30</span>
+                <span class="zone-tick" style="left:100%">0.40</span>
+              </div>
+            </div>
+            <!-- Current case readout -->
+            <div style="margin-top:28px;padding:16px;background:rgba(26,26,26,0.4);border:1px solid rgba(51,51,51,0.3);border-radius:6px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#A1A1A6;">Current case</span>
+                <span class="meta-flag" id="unc-flag" style="">Review flag</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:0.15em;text-transform:uppercase;color:#A1A1A6;margin-bottom:4px;">Std deviation</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:500;color:#FFFFFF;" id="unc-std">0.244</div>
+                </div>
+                <div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:0.15em;text-transform:uppercase;color:#A1A1A6;margin-bottom:4px;">Confidence level</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:500;" id="unc-conf" style="color:#E0115F;">Low</div>
+                </div>
+              </div>
+            </div>
+            <!-- Zone bands -->
+            <div class="zone-bands">
+              <div class="zone-band-card" style="border-color:rgba(77,140,255,0.3);">
+                <div class="zone-band-label" style="color:#4D8CFF;">High confidence</div>
+                <div class="zone-band-range">std &lt; 0.10</div>
+                <div class="zone-band-desc">All domain models mathematically integrate. Report standardizes.</div>
+              </div>
+              <div class="zone-band-card" style="border-color:rgba(16,185,129,0.3);">
+                <div class="zone-band-label" style="color:#A67C00;">Moderate</div>
+                <div class="zone-band-range">0.10 to 0.20</div>
+                <div class="zone-band-desc">Partial agreement. Domain derivations isolate specific discrepancies.</div>
+              </div>
+              <div class="zone-band-card" style="border-color:rgba(244,63,94,0.3);">
+                <div class="zone-band-label" style="color:#E0115F;">Review flag</div>
+                <div class="zone-band-range">std &gt; 0.20</div>
+                <div class="zone-band-desc">Significant divergence. System halts evaluation formatting for expert review.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DESIGN PRINCIPLES -->
+    <section id="principles" class="case-section">
+      <p class="section-eyebrow">Architecture Principles</p>
+      <h2 class="section-heading">Core architectural directives</h2>
+
+      <div class="principles-grid reveal-panel">
+        <div class="principle-card">
+          <div class="principle-num">01</div>
+          <div class="principle-title">Domain execution isolation</div>
+          <div class="principle-body">Separate mathematical feature distributions into independent models. Forcing all parameters into a unified classification gradient deletes domain-specific context.</div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-num">02</div>
+          <div class="principle-title">Late fusion hierarchy</div>
+          <div class="principle-body">Process independent probability arrays through a meta-learner interface. Connecting features before model evaluation eliminates the capacity to determine predictive origin.</div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-num">03</div>
+          <div class="principle-title">Discrete modality calibration</div>
+          <div class="principle-body">Apply Platt and isotonic scalers uniquely per stream. Feature subsets maintain mutually exclusive class imbalances requiring independent corrective margins.</div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-num">04</div>
+          <div class="principle-title">Deterministic uncertainty proxies</div>
+          <div class="principle-body">Output inter-model disagreement explicitly. Suppressing deviation logic in favor of mean averages deletes critical outcome limitations.</div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-num">05</div>
+          <div class="principle-title">Evidence structuring logic</div>
+          <div class="principle-body">The primary artifact organizes evidence rather than generating fixed diagnostic percentages. The clinical protocol incorporates numerical indices alongside direct behavioral mapping.</div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-num">06</div>
+          <div class="principle-title">Diagnostic measurement mapping</div>
+          <div class="principle-body">Force mathematical indicators to bind specifically to real-world validation endpoints. Model limits must connect cleanly to established field schedules.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+  // ============================================================
+  // THREE.JS WIREFRAME SPHERE
+  // ============================================================
+  (function initWebGL() {
+    const canvas = document.getElementById('webgl-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 16);
+    
+    const geo = new THREE.IcosahedronGeometry(6, 1);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, wireframe: true, transparent: true, opacity: 0.05 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(8, 0, -5);
+    scene.add(mesh);
+    
+    let sp = 0;
+    window.addEventListener('scroll', () => { sp = window.scrollY / Math.max(1, document.body.scrollHeight - window.innerHeight); });
+    
+    function animate() {
+      requestAnimationFrame(animate);
+      mesh.rotation.x += 0.001;
+      mesh.rotation.y += 0.002;
+      mesh.position.y = -sp * 4.0;
+      renderer.render(scene, camera);
+    }
+    animate();
+    
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  })();
+
+  // ============================================================
+  (function() {
+    const canvas = document.getElementById('webgl-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.9;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 16);
+
+    const geometry = new THREE.BoxGeometry(2.4, 5.6, 0.5, 1, 1, 1);
+    const material = new THREE.MeshPhysicalMaterial({
+      color: 0x8b5cf6,
+      metalness: 0.15,
+      roughness: 0.08,
+      clearcoat: 0.9,
+      clearcoatRoughness: 0.1,
+      reflectivity: 0.85,
+      transparent: true,
+      opacity: 0.72
+    });
+    const monolith = new THREE.Mesh(geometry, material);
+    monolith.position.set(3.8, 0, 0);
+    scene.add(monolith);
+
+    const edges = new THREE.EdgesGeometry(geometry);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.25 });
+    const wireframe = new THREE.LineSegments(edges, lineMat);
+    monolith.add(wireframe);
+
+    const ambient = new THREE.AmbientLight(0x8b5cf6, 0.4);
+    scene.add(ambient);
+
+    const rectLight = new THREE.RectAreaLight(0xFFFFFF, 1.8, 8, 12);
+    rectLight.position.set(-6, 2, 4);
+    rectLight.lookAt(0, 0, 0);
+    scene.add(rectLight);
+
+    const fillLight = new THREE.DirectionalLight(0x3b82f6, 0.6);
+    fillLight.position.set(4, -2, 3);
+    scene.add(fillLight);
+
+    gsap.to(camera.position, { z: 8, duration: 3.5, ease: 'power2.inOut', delay: 0.5 });
+
+    let scrollY = 0;
+    window.addEventListener('scroll', () => { scrollY = window.scrollY; });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      monolith.rotation.y += 0.0012;
+      monolith.rotation.x = scrollY * 0.0001;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  })();
+
+  // ============================================================
+  // LENIS SMOOTH SCROLL
+  // ============================================================
+  const lenis = new Lenis({ duration: 1.6, easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
+  gsap.ticker.add(time => lenis.raf(time * 1000));
+  gsap.ticker.lagSmoothing(0);
+
+  // ============================================================
+  // BOOT SEQUENCE
+  // ============================================================
+  const overlay = document.getElementById('boot-overlay');
+  gsap.to(overlay, { opacity: 0, duration: 0.8, delay: 1.8, onComplete: () => overlay.style.display = 'none' });
+
+  const heroTitle = document.querySelector('.hero-title');
+  const heroThesis = document.querySelector('.hero-thesis');
+  const heroEyebrow = document.querySelector('.hero-eyebrow');
+  gsap.set([heroTitle, heroThesis, heroEyebrow], { opacity: 0, filter: 'blur(24px)' });
+  gsap.to(heroEyebrow, { opacity: 1, filter: 'blur(0px)', duration: 1.2, delay: 2.0 });
+  gsap.to(heroTitle, { opacity: 1, filter: 'blur(0px)', duration: 1.5, delay: 2.2,
+    letterSpacing: '-0.015em', ease: 'power2.out' });
+  gsap.to(heroThesis, { opacity: 1, filter: 'blur(0px)', duration: 1.2, delay: 2.6 });
+
+  // ============================================================
+  // CURSOR HALO
+  // ============================================================
+  const halo = document.getElementById('cursor-halo');
+  let haloX = window.innerWidth / 2, haloY = window.innerHeight / 2;
+  let mouseX = haloX, mouseY = haloY;
+  window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+  (function animHalo() {
+    haloX += (mouseX - haloX) * 0.08;
+    haloY += (mouseY - haloY) * 0.08;
+    halo.style.left = (haloX - 100) + 'px';
+    halo.style.top = (haloY - 100) + 'px';
+    requestAnimationFrame(animHalo);
+  })();
+
+  // ============================================================
+  // GLASS PANEL GLOW RINGS
+  // ============================================================
+  document.querySelectorAll('.glass-panel, .data-wrap, .stat-card').forEach(panel => {
+    const ring = document.createElement('div');
+    ring.className = 'glow-ring';
+    panel.appendChild(ring);
+    panel.addEventListener('mousemove', e => {
+      const rect = panel.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      ring.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(77,140,255,0.18) 0%, transparent 60%)`;
+      ring.style.opacity = '1';
+    });
+    panel.addEventListener('mouseleave', () => { ring.style.opacity = '0'; });
+  });
+
+  // ============================================================
+  // NAV SPINE
+  // ============================================================
+  const sections = ['hero', 'context', 'domains', 'fusion', 'calibration', 'uncertainty', 'principles'];
+  const navDots = document.querySelectorAll('.nav-dot');
+  const navWraps = document.querySelectorAll('.nav-dot-wrap');
+
+  navWraps.forEach(wrap => {
+    wrap.addEventListener('click', () => {
+      const target = document.getElementById(wrap.dataset.target);
+      if (target) lenis.scrollTo(target, { offset: -40, duration: 1.4 });
+    });
+  });
+
+  function updateNav() {
+    let active = 0;
+    sections.forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el && el.getBoundingClientRect().top < window.innerHeight * 0.5) active = i;
+    });
+    navDots.forEach((dot, i) => dot.classList.toggle('active', i === active));
+  }
+  window.addEventListener('scroll', updateNav);
+
+  // ============================================================
+  // STAT COUNTERS
+  // ============================================================
+  let statsDone = false;
+  ScrollTrigger.create({
+    trigger: '#context',
+    start: 'top 80%',
+    onEnter: () => {
+      if (statsDone) return;
+      statsDone = true;
+      document.querySelectorAll('.stat-val[data-target]').forEach(el => {
+        const target = parseInt(el.getAttribute('data-target'));
+        const counter = { val: 0 };
+        gsap.to(counter, {
+          val: target, duration: 1.4, ease: 'power2.out', snap: { val: 1 },
+          onUpdate: () => { el.textContent = Math.floor(counter.val); }
+        });
+      });
+    }
+  });
+
+  // ============================================================
+  // REVEAL PANELS (clip-path wipes)
+  // ============================================================
+  document.querySelectorAll('.reveal-panel').forEach(panel => {
+    gsap.set(panel, { clipPath: 'inset(0 100% 0 0)' });
+    ScrollTrigger.create({
+      trigger: panel,
+      start: 'top 82%',
+      onEnter: () => {
+        gsap.to(panel, { clipPath: 'inset(0 0% 0 0)', duration: 1.0, ease: 'power3.out' });
+      }
+    });
+  });
+
+  // ============================================================
+  // GLASS PANEL PARALLAX
+  // ============================================================
+  document.querySelectorAll('.glass-panel').forEach(panel => {
+    gsap.to(panel, {
+      yPercent: -8,
+      ease: 'none',
+      scrollTrigger: { trigger: panel, start: 'top bottom', end: 'bottom top', scrub: true }
+    });
+  });
+
+  // ============================================================
+  // STAIRCASE ANIMATION
+  // ============================================================
+  let staircaseDone = false;
+  ScrollTrigger.create({
+    trigger: '#domains',
+    start: 'top 75%',
+    onEnter: () => {
+      if (staircaseDone) return;
+      staircaseDone = true;
+      const line = document.getElementById('stair-line');
+      const fill = document.getElementById('stair-fill');
+      gsap.to(line, { strokeDashoffset: 0, duration: 1.6, ease: 'power2.out' });
+      gsap.to(fill, { opacity: 1, duration: 1.2, delay: 0.6 });
+      ['sd1','sd2','sd3'].forEach((id, i) => {
+        gsap.to(document.getElementById(id), { opacity: 1, duration: 0.4, delay: 0.4 + i * 0.25 });
+      });
+      document.querySelectorAll('.stair-val-importance').forEach((el, i) => {
+        gsap.to(el, { opacity: 1, duration: 0.4, delay: 0.6 + i * 0.15 });
+      });
+    }
+  });
+
+  function setStairView(view) {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(view === 'importance' ? 'Primacy' : 'Items')));
+    document.querySelectorAll('.stair-val-importance').forEach(el => {
+      gsap.to(el, { opacity: view === 'importance' ? 1 : 0, duration: 0.3 });
+    });
+    document.querySelectorAll('.stair-val-ados').forEach(el => {
+      gsap.to(el, { opacity: view === 'ados' ? 1 : 0, duration: 0.3 });
+    });
+  }
+
+  // ============================================================
+  // ARC GAUGE ANIMATIONS
+  // ============================================================
+  const fusionCases = {
+    A: { social: 75, comm: 31, rrb: 88, meta: '0.65', std: '0.244', flag: 'review' },
+    B: { social: 78, comm: 81, rrb: 85, meta: '0.81', std: '0.036', flag: 'ok' }
+  };
+  let currentFusionCase = 'A';
+  let arcsDone = false;
+
+  function animateArcs(caseKey) {
+    const c = fusionCases[caseKey];
+    const arcs = [
+      { id: 'arc-social', val: c.social, valId: 'arc-social-val' },
+      { id: 'arc-comm', val: c.comm, valId: 'arc-comm-val' },
+      { id: 'arc-rrb', val: c.rrb, valId: 'arc-rrb-val' }
+    ];
+    arcs.forEach(a => {
+      const el = document.getElementById(a.id);
+      const offset = 251.3 * (1 - a.val / 100);
+      gsap.to(el, { attr: { strokeDashoffset: offset }, duration: 1.0, ease: 'power2.out' });
+      const counter = { val: parseFloat(el.getAttribute('stroke-dashoffset') !== '251.3' ? (100 - (parseFloat(el.getAttribute('stroke-dashoffset')) / 251.3) * 100) : 0) };
+      const valEl = document.getElementById(a.valId);
+      gsap.to(counter, {
+        val: a.val, duration: 1.0, ease: 'power2.out', snap: { val: 1 },
+        onUpdate: () => { valEl.textContent = Math.floor(counter.val); }
+      });
+    });
+    document.getElementById('meta-est').textContent = c.meta;
+    document.getElementById('meta-std').textContent = c.std;
+    const flag = document.getElementById('meta-flag');
+    if (c.flag === 'review') {
+      flag.textContent = 'Review flag';
+      flag.className = 'meta-flag flag-review';
+    } else {
+      flag.textContent = 'High confidence';
+      flag.className = 'meta-flag flag-ok';
+    }
+  }
+
+  ScrollTrigger.create({
+    trigger: '#fusion',
+    start: 'top 75%',
+    onEnter: () => {
+      if (arcsDone) return;
+      arcsDone = true;
+      animateArcs('A');
+    }
+  });
+
+  function setFusionCase(key) {
+    currentFusionCase = key;
+    document.querySelectorAll('#fusion .toggle-btn').forEach(b => {
+      b.classList.toggle('active', b.textContent.includes(key === 'A' ? 'Disagreement' : 'Consensus'));
+    });
+    animateArcs(key);
+  }
+
+  // ============================================================
+  // CALIBRATION CURVE TOGGLE
+  // ============================================================
+  let calibInitDone = false;
+  let activeCalib = 'raw';
+
+  ScrollTrigger.create({
+    trigger: '#calibration',
+    start: 'top 75%',
+    onEnter: () => {
+      if (calibInitDone) return;
+      calibInitDone = true;
+      animateCalibCurve('raw');
+    }
+  });
+
+  function animateCalibCurve(type) {
+    activeCalib = type;
+    const curves = { raw: 'curve-raw', platt: 'curve-platt', isotonic: 'curve-isotonic' };
+    Object.entries(curves).forEach(([k, id]) => {
+      const el = document.getElementById(id);
+      if (k === type) {
+        const len = el.getTotalLength ? el.getTotalLength() : 500;
+        gsap.set(el, { opacity: 1, strokeDasharray: len, strokeDashoffset: len });
+        gsap.to(el, { strokeDashoffset: 0, duration: 1.2, ease: 'power2.out' });
+      } else {
+        gsap.to(el, { opacity: 0, duration: 0.3 });
+      }
+    });
+  }
+
+  function setCalib(type) {
+    document.querySelectorAll('#calibration .toggle-btn').forEach(b => {
+      const labels = { raw: 'Raw GBM', platt: 'Platt Scaled', isotonic: 'Isotonic' };
+      b.classList.toggle('active', b.textContent.trim() === labels[type]);
+    });
+    animateCalibCurve(type);
+  }
+
+  // ============================================================
+  // UNCERTAINTY ZONE TRACK
+  // ============================================================
+  const uncCases = {
+    A: { std: 0.244, pct: 61, conf: 'Low', flag: 'Review flag', flagClass: 'flag-review', confColor: '#E0115F' },
+    B: { std: 0.036, pct: 9,  conf: 'High', flag: 'High Confidence', flagClass: 'flag-ok', confColor: '#4D8CFF' }
+  };
+
+  let uncDone = false;
+  ScrollTrigger.create({
+    trigger: '#uncertainty',
+    start: 'top 75%',
+    onEnter: () => {
+      if (uncDone) return;
+      uncDone = true;
+      setUncertaintyCase('A');
+    }
+  });
+
+  function setUncertaintyCase(key) {
+    document.querySelectorAll('#uncertainty .toggle-btn').forEach(b => {
+      b.classList.toggle('active', b.textContent.includes(key === 'A' ? 'Review' : 'High'));
+    });
+    const c = uncCases[key];
+    document.getElementById('zone-marker').style.left = c.pct + '%';
+    document.getElementById('unc-std').textContent = c.std.toFixed(3);
+    const confEl = document.getElementById('unc-conf');
+    confEl.textContent = c.conf;
+    confEl.style.color = c.confColor;
+    const flagEl = document.getElementById('unc-flag');
+    flagEl.textContent = c.flag;
+    flagEl.className = 'meta-flag ' + c.flagClass;
+  }
+
+  </script>
+
+<!-- GLOBAL FOOTER -->
+<footer class="global-footer">
+  <div class="footer-copy">&copy; 2026 Dr. Heather Leffew. All Rights Reserved.</div>
+  <div class="footer-links">
+    <a href="https://linkedin.com/in/heathertleffew" target="_blank">LinkedIn</a>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   DYNAMIC SIDENOTE CLEARANCE (Global Portfolio Mandate)
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    const sidenoteParagraphs = document.querySelectorAll('.col-with-sidenotes');
+    sidenoteParagraphs.forEach(p => {
+        const sn = p.querySelector('.sn');
+        if (sn) {
+            const updateHeight = () => {
+                if (window.innerWidth >= 1240) {
+                    // Calculate exact clearance needed based on the sidenote's absolute top position
+                    const neededHeight = sn.offsetTop + sn.offsetHeight + 40;
+                    p.style.minHeight = neededHeight + 'px';
+                } else {
+                    p.style.minHeight = 'auto';
+                }
+            };
+            updateHeight();
+            setTimeout(updateHeight, 250);
+            window.addEventListener('resize', updateHeight);
+        }
+    });
+});
+</script>
+
+</body>
+
+</html>

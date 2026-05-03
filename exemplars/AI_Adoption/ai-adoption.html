@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Productivity J-Curve | Portfolio</title>
+    <link rel="stylesheet" href="../design_system/index.css">
+    <style>
+        /* Typography and Layout overides for "Interactive Paper" feeling */
+        .report-prose {
+            max-width: 720px;
+            margin: 0 auto;
+            color: var(--platinum);
+            font-family: var(--font-primary);
+            font-size: 1.15rem;
+            line-height: 1.8;
+            padding: 2rem 0;
+        }
+
+        .report-prose p {
+            margin-bottom: 2rem;
+        }
+
+        .dropcap::first-letter {
+            font-family: var(--font-secondary);
+            font-weight: 600;
+            font-size: 5rem;
+            line-height: 0.8;
+            float: left;
+            margin: 0.05em 0.1em -0.1em 0;
+            color: var(--sapphire-light);
+        }
+
+        .sidenote {
+            float: right;
+            clear: right;
+            margin-right: -280px;
+            width: 240px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--gray-light);
+            border-left: 1px solid var(--border);
+            padding-left: 1rem;
+            font-family: var(--font-primary);
+        }
+
+        @media(max-width:1300px) {
+            .sidenote {
+                float: none;
+                margin-right: 0;
+                width: 100%;
+                border-left: 3px solid var(--sapphire);
+                padding: 1rem;
+                background: rgba(255,255,255,0.02);
+                margin: 2rem 0;
+            }
+        }
+        
+        .math-block {
+            font-family: 'ui-monospace', monospace;
+            font-size: 0.95rem;
+            background: rgba(77, 140, 255, 0.05);
+            border-left: 2px solid var(--sapphire);
+            padding: 1.5rem;
+            color: var(--platinum);
+            margin: 2rem 0;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        /* Sandbox Styles */
+        .sandbox-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 2rem;
+            margin: 4rem auto;
+            max-width: 1100px;
+            min-height: 500px;
+        }
+
+        .vars-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .panel-title {
+            font-family: var(--font-primary);
+            color: var(--platinum);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+            letter-spacing: 0.05em;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'ui-monospace', monospace;
+            font-size: 0.7rem;
+            color: var(--gray-light);
+            text-transform: uppercase;
+        }
+
+        .slider-val {
+            color: var(--sapphire-light);
+            font-weight: 600;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background: var(--sapphire);
+            cursor: pointer;
+            margin-top: -5px;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 2px;
+            cursor: pointer;
+            background: #30363d;
+        }
+
+        .output-panel {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Custom SVGs for Graph */
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .chart-svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .chart-line {
+            fill: none;
+            stroke: var(--sapphire);
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: d 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .chart-area {
+            fill: rgba(77, 140, 255, 0.1);
+            transition: d 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .zero-line {
+            stroke: #484f58;
+            stroke-width: 1;
+            stroke-dasharray: 4 4;
+        }
+
+        .axis-label {
+            font-family: 'ui-monospace', monospace;
+            font-size: 0.65rem;
+            fill: #8b949e;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .kpi-box {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid #30363d;
+            padding: 1rem;
+        }
+
+        .kpi-v {
+            font-family: var(--font-secondary);
+            font-size: 1.8rem;
+            color: #fff;
+            margin-bottom: 0.25rem;
+        }
+
+        .kpi-l {
+            font-family: 'ui-monospace', monospace;
+            font-size: 0.65rem;
+            color: var(--gray-dark);
+            text-transform: uppercase;
+        }
+
+        .kpi-alert {
+            color: #f43f5e;
+        }
+
+        .kpi-success {
+            color: #10b981;
+        }
+
+    
+/* ============================================================
+   MASTER GRID & PORTRAIT MODE POLISH
+   ============================================================ */
+:root { --grid-left: max(32px, calc(50vw - 540px)); }
+@media (min-width: 1360px) { :root { --grid-left: max(260px, calc(50vw - 540px)); } }
+
+@media (min-width: 1240px) {
+  section.band:not(.front) {
+    display: grid;
+    grid-template-columns: var(--grid-left) 680px 400px minmax(16px, 1fr);
+    align-items: start;
+  }
+  section.band:not(.front) > * {
+    grid-column: 2 / 3;
+    margin-left: 0 !important; 
+    margin-right: 0 !important;
+  }
+  section.band:not(.front) > .col-wide, 
+  section.band:not(.front) > .stat-grid, 
+  section.band:not(.front) > .figure, 
+  section.band:not(.front) > .report-prose {
+    grid-column: 2 / 4;
+    width: 100%; 
+    max-width: none;
+  }
+  .stat-grid { justify-content: start !important; }
+}
+
+@media (min-width: 1180px) and (max-width: 1359px) {
+  #spine {
+    width: 44px; overflow: hidden; white-space: nowrap;
+    transition: width 0.4s cubic-bezier(0.16,1,0.3,1), background 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+  #spine:hover { width: 250px; }
+}
+@media (min-width: 1360px) {
+  #spine { width: auto; overflow: visible; }
+}
+
+/* Portrait Mode Space Fix */
+.front { min-height: clamp(400px, 80vh, 850px) !important; justify-content: center !important; }
+
+</style>
+</head>
+<body class="page-body">
+
+    <header class="header">
+        <div class="header-logo">
+            <span class="logo-mark"></span>
+            Portfolio
+        </div>
+        <nav class="header-nav">
+            <a href="../index.html">Index</a>
+            <a href="../projects-repository.html">Repository</a>
+            <a href="#">Systems Dynamics</a>
+        </nav>
+    </header>
+
+    <div class="layout-grid">
+        <aside class="layout-sidebar">
+            <nav class="spine-nav">
+                <div class="spine-header">THE PRODUCTIVITY J-CURVE</div>
+                <ul class="spine-list">
+                    <li><a href="#overview" class="active">01 // The Illusion of Returns</a></li>
+                    <li><a href="#math">02 // Defining the Friction Coefficients</a></li>
+                    <li><a href="#simulator">03 // Interactive J-Curve Sandbox</a></li>
+                    <li><a href="#implications">04 // Structural Implications</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="layout-main">
+            <article class="report-content">
+                
+                <section class="band band--dark" id="overview">
+                    <div class="band-inner">
+                        <h1 class="heading-display">Modeling the AI Productivity J-Curve.</h1>
+                        <p class="text-lead">
+                            Abandoning static dashboards to mathematically simulate the friction of enterprise architecture integration.
+                        </p>
+                        <hr class="divider">
+
+                        <div class="report-prose">
+                            <span class="sidenote">Dashboards aggregate past data. They fail to communicate the continuous geometric relationship between technical debt and implementation limits. To truly evaluate deployment risk, we must map the integration surface dynamically.</span>
+                            
+                            <p class="dropcap">In macroeconomic systems modeling, the most dangerous assumption is the illusion of immediate, linear returns. When major organizational shifts occur—like the integration of autonomous generative pipelines into core infrastructure—the initial telemetry never reflects an upward slope. It drops precipitously.</p>
+
+                            <p>This is commonly referred to in transformation literature as the "implementation dip." It is the period where legacy architectures must be re-routed, security compliance requires dense rewrites, and specialized talent must be acquired at a severe premium. During this phase, operational bandwidth strictly decreases before the new algorithmic efficiencies are permitted to kick in.</p>
+
+                            <p>To accurately plan an enterprise deployment, we must mathematically separate and scale two conflicting forces over time: the temporary, decaying drag of <strong>Implementation Debt</strong> against the compounding, exponential thrust of <strong>Algorithmic Gain</strong>.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="band band--obsidian" id="math">
+                    <div class="band-inner">
+                        <h2 class="heading-section">02 // Defining the Friction Coefficients</h2>
+                        <div class="report-prose">
+                            <p>Rather than viewing an adoption report as a static pie chart, we formulate a continuous time-series model (t=0 to t=24 months).</p>
+
+                            <div class="math-block">
+                                Net_ROI(t) = Gain(t) - Debt(t)<br><br>
+                                Gain(t) = Integration_Scope * (t<sup>1.8</sup>)<br>
+                                Debt(t) = Legacy_Friction * t * e<sup>(-t / 4)</sup>
+                            </div>
+
+                            <p>Analyzing the variables:</p>
+                            
+                            <ul style="margin-left: 2rem; margin-bottom: 2rem; color: var(--gray-light); line-height: 1.8;">
+                                <li><strong>Legacy Friction [Debt]:</strong> An aggregate coefficient heavily influenced by legacy mainframes and a lack of specialized internal talent. Because <code>t * e^(-t/4)</code> peaks around Month 4, this function perfectly simulates the "trough of despair" before integration routines are stabilized.</li>
+                                <li><strong>Integration Scope [Gain]:</strong> A multiplier representing how deeply the AI is embedded into core business logic (e.g., automated QA pipelines vs. isolated chatbots). It fuels a nonlinear power-law return <code>(t^1.8)</code>.</li>
+                            </ul>
+
+                            <p>Crucially, attempting a high Integration Scope when Legacy Friction is immense causes the initial debt trough to deepen aggressively, risking enterprise bankruptcy or project cancellation before the exponential gains ever cross the breakeven threshold.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="band band--dark" id="simulator" style="border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+                    <div class="band-inner">
+                        <h2 class="heading-section">03 // The Integration Sandbox</h2>
+                        <div class="report-prose">
+                            <p>Below is a stateful translation of the mathematical function. Adjust the operational parameters of a hypothetical enterprise. <strong>Observe how maximizing the technical "Integration Scope" while starving the "Talent Density" creates a catastrophic initial drawdown</strong> that pushes the breakeven point beyond a typical 12-month budget cycle.</p>
+                        </div>
+
+                        <!-- INTERACTIVE MODULE -->
+                        <div class="sandbox-layout">
+                            
+                            <!-- Variables Panel -->
+                            <div class="vars-panel">
+                                <div class="panel-title">Enterprise Parameters</div>
+                                
+                                <div class="slider-group">
+                                    <div class="slider-label"><span>Legacy Tech Debt</span> <span class="slider-val" id="val-legacy">5</span></div>
+                                    <input type="range" id="rng-legacy" min="1" max="10" value="5" oninput="updateSimulation()">
+                                </div>
+
+                                <div class="slider-group">
+                                    <div class="slider-label"><span>Specialized Talent Density</span> <span class="slider-val" id="val-talent">5</span></div>
+                                    <input type="range" id="rng-talent" min="1" max="10" value="5" oninput="updateSimulation()">
+                                </div>
+
+                                <div class="slider-group" style="margin-top:1rem;">
+                                    <div class="slider-label"><span>AI Integration Scope</span> <span class="slider-val" id="val-scope">5</span></div>
+                                    <input type="range" id="rng-scope" min="1" max="10" value="5" oninput="updateSimulation()">
+                                </div>
+
+                                <div style="font-family:'ui-monospace', monospace; font-size:0.65rem; color:#8b949e; line-height:1.5; margin-top:1rem; padding-top:1rem; border-top:1px dashed #30363d;">
+                                    <strong>Instruction:</strong> Drop Talent to 1 and push Scope to 10. Watch the maximum drawdown exceed critical failure thresholds.
+                                </div>
+                            </div>
+
+                            <!-- Outputs -->
+                            <div class="output-panel">
+                                
+                                <div class="chart-wrapper">
+                                    <svg id="jcurve-svg" class="chart-svg">
+                                        <!-- Zero Line -->
+                                        <line id="svg-zero" x1="0" y1="50%" x2="100%" y2="50%" class="zero-line" />
+                                        
+                                        <!-- Grid markers (Months) -->
+                                        <text x="5%" y="95%" class="axis-label">M0</text>
+                                        <text x="25%" y="95%" class="axis-label">M6</text>
+                                        <text x="50%" y="95%" class="axis-label">M12</text>
+                                        <text x="75%" y="95%" class="axis-label">M18</text>
+                                        <text x="95%" y="95%" class="axis-label">M24</text>
+                                        
+                                        <text x="1%" y="10%" class="axis-label" fill="#10b981">+ Value</text>
+                                        <text x="1%" y="85%" class="axis-label" fill="#f43f5e">- Cost</text>
+
+                                        <!-- Area and Line generated via JS -->
+                                        <path id="svg-area" class="chart-area" d="" />
+                                        <path id="svg-line" class="chart-line" d="" />
+                                    </svg>
+                                </div>
+
+                                <div class="kpi-grid">
+                                    <div class="kpi-box">
+                                        <div class="kpi-v" id="out-drawdown">0</div>
+                                        <div class="kpi-l">Max Drawdown</div>
+                                    </div>
+                                    <div class="kpi-box">
+                                        <div class="kpi-v" id="out-breakeven">Month 0</div>
+                                        <div class="kpi-l">Breakeven Horizon</div>
+                                    </div>
+                                    <div class="kpi-box">
+                                        <div class="kpi-v" id="out-terminal">0</div>
+                                        <div class="kpi-l">M24 Net ROI</div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                        <!-- END INTERACTIVE MODULE -->
+
+                    </div>
+                </section>
+
+                <section class="band band--obsidian" id="implications">
+                    <div class="band-inner">
+                        <h2 class="heading-section">04 // Structural Implications</h2>
+                        <div class="report-prose">
+                            <p>Visualizing the J-Curve mathematically forces a vital realization: aggressive integration is not inherently optimal. If an organization lacks the specific architectural talent, increasing the scope of an AI project does not linearly increase the immediate value—it geometrically increases the immediate debt burden.</p>
+
+                            <p>When the simulated drawdown exceeds organizational risk tolerance, the project is inevitably cancelled before Month 12, entirely missing the exponential lift phase. This is why "isolated chatbots" (low scope, low friction) succeed easily in enterprise environments, while "autonomous workflow replacements" (high scope, high friction) frequently terminate in budgetary failure.</p>
+
+                            <p>The solution is not to avoid scale, but to analytically map the trough. By utilizing this mathematical framework to model the exact depth of the implementation dip, technology leaders can secure appropriate multi-year runway, proving to operational boards that the geometric returns occurring post-Month 16 are mechanically guaranteed by the initial friction.</p>
+                        </div>
+                    </div>
+                </section>
+
+            </article>
+        </main>
+    </div>
+
+    <script>
+        function updateSimulation() {
+            // Fetch raw slider inputs
+            const legacy = parseInt(document.getElementById('rng-legacy').value);
+            const talent = parseInt(document.getElementById('rng-talent').value);
+            const scope = parseInt(document.getElementById('rng-scope').value);
+
+            // Update UI Labels
+            document.getElementById('val-legacy').textContent = legacy;
+            document.getElementById('val-talent').textContent = talent;
+            document.getElementById('val-scope').textContent = scope;
+
+            // Mathematical Coefficients
+            // DebtMultiplier: High legacy and low talent drastically increase debt burden.
+            const debtMultiplier = (legacy * 25) + ((11 - talent) * 15) + (scope * 5); 
+            
+            // ScopeMultiplier: High scope and high talent increase the exponential return slope.
+            const scopeMultiplier = ((scope * 1.5) * (talent * 0.8)) / 10;
+
+            const months = 24;
+            const dataPoints = [];
+            
+            let minNet = 0;
+            let maxNet = 100;
+            let breakevenMonth = -1;
+
+            // Calculate the curve
+            for (let t = 0; t <= months; t++) {
+                // Cost function: Peaks early, decays. 
+                let cost = - (debtMultiplier * t * Math.exp(-t / 4.5));
+                
+                // Gain function: Exponential growth
+                let gain = scopeMultiplier * Math.pow(t, 1.85);
+
+                let net = cost + gain;
+                dataPoints.push(net);
+
+                if (net < minNet) minNet = net;
+                if (net > maxNet) maxNet = net;
+                
+                // Track breakeven (first time we go positive after the initial dip)
+                if (breakevenMonth === -1 && t > 2 && net > 0) {
+                    breakevenMonth = t;
+                }
+            }
+
+            // Draw to SVG
+            drawSVG(dataPoints, minNet, maxNet);
+
+            // Update KPIs
+            const drawdownEl = document.getElementById('out-drawdown');
+            const termEl = document.getElementById('out-terminal');
+            const bexEl = document.getElementById('out-breakeven');
+
+            // Format Drawdown
+            drawdownEl.textContent = Math.round(minNet);
+            if (minNet < -1500) drawdownEl.className = 'kpi-v kpi-alert';
+            else drawdownEl.className = 'kpi-v';
+
+            // Format Terminal
+            termEl.textContent = "+" + Math.round(dataPoints[24]);
+            termEl.className = 'kpi-v kpi-success';
+
+            // Format Breakeven
+            if (breakevenMonth === -1) {
+                bexEl.textContent = "Never";
+                bexEl.className = 'kpi-v kpi-alert';
+            } else {
+                bexEl.textContent = "Month " + breakevenMonth;
+                bexEl.className = 'kpi-v';
+            }
+        }
+
+        function drawSVG(data, absoluteMin, absoluteMax) {
+            // We want to lock the scale reasonably so it can animate visually without bouncing wildly,
+            // but we must accommodate the extremes.
+            let minScale = Math.min(absoluteMin, -2000); 
+            let maxScale = Math.max(absoluteMax, 2500);
+            
+            let range = maxScale - minScale;
+            let zeroY = ((maxScale) / range) * 100; // Percentage from top
+
+            const svg = document.getElementById('jcurve-svg');
+            document.getElementById('svg-zero').setAttribute('y1', zeroY + '%');
+            document.getElementById('svg-zero').setAttribute('y2', zeroY + '%');
+
+            let pathD = "";
+            let areaD = "";
+
+            let widthStep = 100 / 24;
+
+            data.forEach((val, index) => {
+                let x = index * widthStep;
+                // Calculate Y position as percentage
+                let y = ((maxScale - val) / range) * 100;
+
+                if (index === 0) {
+                    pathD += `M ${x} ${y} `;
+                    areaD += `M ${x} ${zeroY} L ${x} ${y} `;
+                } else {
+                    pathD += `L ${x} ${y} `;
+                    areaD += `L ${x} ${y} `;
+                }
+
+                // If it's the last point, close the area back to zero
+                if (index === 24) {
+                    areaD += `L ${x} ${zeroY} Z`;
+                }
+            });
+
+            document.getElementById('svg-line').setAttribute('d', pathD);
+            document.getElementById('svg-area').setAttribute('d', areaD);
+        }
+
+        // Initialize state on load
+        window.addEventListener('load', updateSimulation);
+    </script>
+
+<script>
+/* ============================================================
+   DYNAMIC SIDENOTE CLEARANCE (Global Portfolio Mandate)
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    const sidenoteParagraphs = document.querySelectorAll('.col-with-sidenotes');
+    sidenoteParagraphs.forEach(p => {
+        const sn = p.querySelector('.sn');
+        if (sn) {
+            const updateHeight = () => {
+                if (window.innerWidth >= 1240) {
+                    // Calculate exact clearance needed based on the sidenote's absolute top position
+                    const neededHeight = sn.offsetTop + sn.offsetHeight + 40;
+                    p.style.minHeight = neededHeight + 'px';
+                } else {
+                    p.style.minHeight = 'auto';
+                }
+            };
+            updateHeight();
+            setTimeout(updateHeight, 250);
+            window.addEventListener('resize', updateHeight);
+        }
+    });
+});
+</script>
+
+</body>
+</html>
