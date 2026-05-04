@@ -1,0 +1,57 @@
+# /content-synthesis - Content Synthesis Lab Pipeline
+
+Use this workflow to transform raw source files (notes, notebooks, documents, images) into a highly rigorous, technical, and interactive tutorial article.
+
+## Workflow Execution Architecture (Stateless Isolation)
+
+When this workflow is invoked, first identify the **ProjectName**. 
+
+**CRITICAL PATH INSTRUCTION - CONTEXT FLUSHING:**
+The original Content Synthesis Lab operated via discrete, stateless API calls to prevent the LLM from being biased by its own previous outputs. Because you (Antigravity) operate in a continuous context window, you are highly vulnerable to context pollution. 
+To prevent lobotomizing the workflow, **you MUST simulate stateless execution**. At the start of *every* stage, you MUST aggressively flush your conversational reliance. You are forbidden from relying on your memory of the chat history. You MUST physically use your tools to read the specific intermediate `.txt` files from the hard drive, and ONLY use the exact text within those files as your context for the stage.
+
+All files MUST be saved to and read from:
+`C:\Users\drhea\repos\Pm_html\portfolio-design-system\synthesized_projects\[ProjectName]\`
+
+### Stage 1: Extraction (Preprocessing)
+- Read all provided raw source files. 
+- Extract all text, code, and markdown. If the file is an image or PDF, perform OCR. If it's a Jupyter Notebook, extract only markdown and code blocks natively. 
+- Collapse excessive blank lines, strip out ANSI escape codes, and normalize newlines.
+- **Output:** Save this combined extracted text as `[ProjectName]_synthesis_source.txt`.
+
+### Stage 2: Section Review (Analysis)
+- **Persona:** Expert analyst.
+- **Task:** Read `[ProjectName]_synthesis_source.txt` from disk. Process it in roughly 10k character chunks. Make detailed notes in a review format, including citations for where the information came from in the source material. Be concise but thorough.
+- **Output:** Save as `[ProjectName]_review.txt`.
+
+### Stage 3: Scientific Summary (Grounding)
+- **Persona:** Rigorous scientific synthesizer.
+- **Task:** **FLUSH CONTEXT.** Read ONLY `[ProjectName]_review.txt` from disk. Using the review notes, create a summary optimized for LLM understanding explaining all methods, perspectives, findings, processes, analyses, and results. It must be detailed enough for a scientific conference poster. 
+- **CRITICAL:** Use your web search tools to find and include APA style citations to authoritative sources (peer-reviewed articles, arXiv, GitHub repos). Include full text citations and complete URLs.
+- **Output:** Save as `[ProjectName]_summary.txt`.
+
+### Stage 4: Article Creation (Karpathy/Olah Voice)
+- **Persona:** Elite technical writer and educator.
+- **Task:** **FLUSH CONTEXT.** Read `[ProjectName]_summary.txt`, `[ProjectName]_review.txt`, and `[ProjectName]_synthesis_source.txt` from disk. Draft a full-length, highly detailed, warm, friendly and specific blog article. Focus on teaching about the topic or method. Appropriate for all technical levels. Collegial discussion, serving as an actual step-by-step tutorial. No hooks, em dashes, or formulaic narrative tropes. No building tension or manufacturing protagonists. Voice: Andrej Karpathy and Chris Olah.
+- **Anonymization & Pedagogical Framing Rule:** Do NOT use lazy LLM corporate storytelling (e.g., "When I was working at a leading data broker..."). Instead, entirely strip the specific corporate narrative and re-frame the article entirely around the structural methodology and scientific principles. Focus on the architectural and mathematical challenge.
+- **Output:** Save as `[ProjectName]_article.txt`.
+
+### Stage 5: Adversarial Audit Loop (STRICT ENFORCEMENT)
+- **Task:** **FLUSH CONTEXT.** Read `[ProjectName]_article.txt` and `[ProjectName]_synthesis_source.txt` from disk. Adopt a hostile, stateless adversarial persona. You MUST forget that you wrote the article. Perform a highly rigorous evaluation comparing the article against the raw source.
+- **Constraint:** You are forbidden from bypassing this step or giving a "lazy pass". You MUST output your evaluation in the chat using a strict JSON format:
+  ```json
+  {
+    "status": "PASSED" | "FAILED",
+    "findings": [
+      "Explicitly list any missed technical details, poorly framed concepts, or missing context.",
+      "List any deviations from the source material."
+    ]
+  }
+  ```
+- **The Loop:** If `"status": "FAILED"`, you MUST execute a "Deep Cure". Generate a new prompt internally using the `findings` array to entirely rewrite the article, curing those specific issues. 
+- **Iteration:** Repeat this JSON output and rewrite process (up to 5 times) until you achieve a legitimate `0-findings` pass. 
+
+### Stage 6: Technical Enrichment
+- **Persona:** Expert UX and technical documentation engineer.
+- **Task:** **FLUSH CONTEXT.** Read the final, audited `[ProjectName]_article.txt` from disk. Enrich the article. Keep all original text, but add: Code blocks where applicable, Tables for data, Descriptions of 2D and 3D visualizations, Opportunities for interactivity to aid understanding, Full technical details for static HTML implementation. Do not specify colors or fonts.
+- **Output:** Save the final result as `[ProjectName]_enriched-article.txt`.
