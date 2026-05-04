@@ -1,0 +1,52 @@
+# ADHD Focus Playlist: Section Review
+
+## Section 1: Author Context and Framing (Source lines 2-6)
+
+The author is a PhD psychologist and data science executive with ADHD who views her neurodivergence as an asset enabling cross-domain work and rapid output. Former club DJ during her doctorate. The meta-framing is critical: this project exists because she could not include a playlist on a personal page without fully analyzing why it works. This self-aware inability to not taxonomize is itself the thesis statement.
+
+**Key detail to preserve:** The project page must open with this meta-awareness. The reader should understand immediately that this is someone applying their professional analytical framework to their own brain's operating conditions.
+
+## Section 2: Three-Mechanism Model (Source lines 13-22)
+
+The playlist's effectiveness is explained through three simultaneous mechanisms:
+1. Bilateral stimulation via left-right audio panning (EMDR-adjacent grounding)
+2. High tempo (140-150 BPM) providing optimal arousal for under-stimulated ADHD brains
+3. Polyrhythmic complexity preventing habituation
+
+**Key detail to preserve:** These are not three separate effects; they are a coordinated system. The source explicitly states the combined effect creates "high-stimulation, low-anxiety" which is the precise state ADHD brains need for sustained deep work. Each mechanism addresses a different failure mode: under-arousal, anxiety/restlessness, and habituation.
+
+## Section 3: Theoretical Grounding (Source lines 24-43)
+
+Each mechanism maps to established theory:
+- BPM maps to Optimal Stimulation Theory (Zentall): ADHD brains are chronically under-aroused and seek extra-task stimulation
+- Bilateral panning maps to Bilateral Stimulation (BLS) from EMDR therapy: regulates parasympathetic nervous system, reduces fight-or-flight anxiety
+- Polyrhythms map to Stochastic Resonance: adding structured noise/complexity enhances signal detection rather than degrading it
+
+**Key detail to preserve:** The ADHD community's adoption of "8D Audio" (exaggerated panning) is mentioned as a community-driven empirical finding. The mechanism is spatial: if the spatial awareness system is busy tracking sound movement, it cannot scan the environment for distractions. This is a resource-competition model of attention, not a relaxation model.
+
+**Key detail to preserve:** The Stochastic Resonance framing is important because it is counterintuitive. Adding complexity should theoretically make focus harder, but the principle shows that a specific level of structured noise actually enhances the ability to detect the primary signal (the work). Simple beats fail because they are too predictable; the ADHD brain habituates and seeks novelty elsewhere.
+
+## Section 4: Combined Effect Model (Source lines 45-47)
+
+The three mechanisms form a coherent system:
+- BPM: fixes under-arousal (addresses boredom)
+- Panning: fixes anxiety (addresses restlessness/paralysis through grounding)
+- Polyrhythms: prevents habituation (addresses tuning-out)
+
+**Key detail to preserve:** This is a three-variable system where each variable addresses a distinct ADHD failure mode. The playlist does not work because of any one feature; it works because all three operate simultaneously to create conditions where the ADHD brain's "extra bandwidth" is fully occupied by the auditory stimulus, preventing that bandwidth from seeking distraction.
+
+## Section 5: Meta-Framing (Source lines 49-51)
+
+The meta-framing is the connective tissue between this personal project and the author's professional identity. The same analytical method (observe behavior, extract implicit signals, classify into typologies, predict outcomes) that she applies to mass murderer communications, AI system outputs, and child safety detection is the method she cannot help applying to her own listening habits.
+
+**Key detail to preserve:** This is not a hobby project dressed up as science. This is a demonstration that the analytical drive is constitutive: the author genuinely cannot encounter a behavioral phenomenon without measuring it. The project page should make this explicit, not as self-deprecating humor, but as genuine illustration of how a certain kind of mind works.
+
+## Structural Notes for Article
+
+1. The article must open with the meta-framing (this was supposed to be a playlist link, then this happened)
+2. The three mechanisms should be presented as a unified system, not a listicle
+3. Each mechanism needs its theoretical citation (Zentall, EMDR/BLS, Stochastic Resonance)
+4. The combined effect model should be presented as a state-space: three failure modes, three interventions, one target state
+5. The Spotify embed should be included so readers can actually listen
+6. The tone should be warm, self-aware, technically rigorous, and genuinely useful to other ADHD people who might benefit from this approach
+7. No em-dashes (author preference)

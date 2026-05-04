@@ -1,0 +1,101 @@
+# ENRICHED ARTICLE: How I Accidentally Wrote a Research Paper About My Own Playlist
+
+## Implementation Notes for HTML Page
+
+### Page Structure
+- Uses the institutional.css design system (dark/paper alternating bands)
+- Front matter band (dark): Title, meta-row, abstract
+- Article body in paper bands with report-prose styling
+- Spotify iframe embed in a dedicated container
+- Data table for the three-mechanism summary
+- References section
+- Related works and next publication sections (populated by global_chrome.js)
+
+### Enrichment: Data Table (Combined System section)
+
+After the prose explanation, include a summary table:
+
+| Mechanism | Theoretical Basis | ADHD Failure Mode | How It Intervenes |
+|-----------|------------------|-------------------|-------------------|
+| 140-150 BPM | Optimal Stimulation Theory (Zentall, 1975) | Under-arousal / boredom | Raises arousal to biologically optimal threshold via external stimulation |
+| Bilateral panning | Bilateral Stimulation / EMDR (Shapiro, 2001) | Anxiety / restlessness / paralysis | Parasympathetic activation via vagus nerve + spatial resource competition |
+| Polyrhythmic complexity | Stochastic Resonance / MBA Model (Soderlund et al., 2007) | Habituation / tuning out | Maintains cognitive load via structured unpredictability |
+
+### Enrichment: Spotify Embed
+Place the Spotify iframe in a styled container with a subtle border treatment. Use the dark theme (theme=0) to match the site aesthetic.
+
+```html
+<div class="spotify-container">
+  <iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/75ZbuIdCJWXIZRkidseQZN?utm_source=generator&theme=0" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+</div>
+```
+
+### Enrichment: Visual Concept for Three-Mechanism Diagram
+
+A simple SVG or CSS diagram showing three converging arrows:
+- Left arrow: "BPM" labeled "Arousal"
+- Center arrow: "Panning" labeled "Grounding"
+- Right arrow: "Complexity" labeled "Engagement"
+- All three converge to a center point labeled "High-Stimulation, Low-Anxiety"
+
+This can be implemented as a static SVG within the page.
+
+### Enrichment: Interactive Concept (Optional)
+
+A simple interactive element: three toggle switches (BPM, Panning, Complexity) that show what happens when each mechanism is present or absent. When all three are "on," the state reads "Deep Focus." When any one is off, a specific failure mode is shown. This demonstrates the coordinated-system concept interactively.
+
+Implementation: Pure CSS/JS toggles, no framework dependency.
+
+### Full Article Text (with HTML section markers)
+
+[FRONT MATTER - dark band]
+Meta-row: Neuroscience / ADHD / Auditory Focus
+Title: How I Accidentally Wrote a Research Paper About My Own Playlist
+Abstract: This was supposed to be one line on my About page. I was going to embed a Spotify playlist, write something like "this helps me focus," and move on with my life. But I have ADHD, and I am a psychologist, and I am constitutionally incapable of encountering a behavioral phenomenon without pulling it apart to figure out why it works.
+
+[SECTION 1 - paper band: "The Playlist"]
+Eyebrow: 01 / Context
+
+I have had ADHD my entire life, and I have never once considered it a limitation. The cross-domain pattern recognition, the speed at which I can generate work, the ability to see connections between forensic psychology and AI alignment and psycholinguistics and control theory: that is what a divergent brain looks like when you point it at problems worth solving. But it also means that deep, sustained focus requires very specific conditions, and I have spent years refining what those conditions are for my particular brain.
+
+This playlist is the result of that refinement, and the reason I am sharing it is that I want other ADHD people to have it. It is not what most people would consider good music. It is not something you would put on at a dinner party or play in your car with the windows down. But it is precisely tuned for a very specific purpose: creating the neurological conditions under which an ADHD brain can lock into deep work and stay there. My side hustle during my doctorate was live club DJing, so I came to this with a practical understanding of what specific audio features do to a room full of bodies, and that background turns out to be directly relevant to understanding why certain production choices create focus states rather than just pleasant listening experiences.
+
+Here is the playlist. Listen to it, or don't, but if you have ADHD and you have never tried anything like this, it is worth the experiment:
+
+[SPOTIFY EMBED]
+
+[SECTION 2 - dark band: "Three Mechanisms, One State"]
+Eyebrow: 02 / The Model
+
+The playlist works because three auditory features operate simultaneously to address three distinct failure modes of the ADHD attention system. None of them works well in isolation. Together, they produce what I think of as the "high-stimulation, low-anxiety" state: the brain's surplus attentional bandwidth is fully occupied by the auditory stimulus, and the parasympathetic nervous system is simultaneously activated, so you get intense engagement without the restlessness or anxiety that usually accompanies it.
+
+[SECTION 3 - paper band: "Tempo"]
+Eyebrow: 03 / Mechanism 1
+
+Full Mechanism 1 text (Optimal Stimulation Theory, Zentall, BPM analysis).
+
+[SECTION 4 - dark band: "Bilateral Panning"]
+Eyebrow: 04 / Mechanism 2
+
+Full Mechanism 2 text (BLS, EMDR, parasympathetic activation, spatial resource competition, 8D Audio).
+
+[SECTION 5 - paper band: "Polyrhythmic Complexity"]
+Eyebrow: 05 / Mechanism 3
+
+Full Mechanism 3 text (Stochastic Resonance, MBA model, habituation, Van Aswegen 2024 nuance).
+
+[SECTION 6 - dark band: "The Combined System"]
+Eyebrow: 06 / Synthesis
+
+Combined system prose + data table + optional interactive toggles.
+
+[SECTION 7 - paper band: "Why I Am Sharing This"]
+Eyebrow: 07 / Application
+
+Closing section: sharing motivation, tuning framework, meta-awareness closing line.
+
+[REFERENCES - dark band]
+Full reference list with DOI links where available.
+
+[RELATED WORKS - paper band]
+Populated dynamically by global_chrome.js from projects_index.json.

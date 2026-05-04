@@ -1,0 +1,60 @@
+# ADHD Focus Playlist: Source Material
+## Author Context and Framing
+
+Dr. Heather Leffew is a PhD psychologist (quantitative predictive linguistics), data science executive (Director of Data Science at Spokeo, former Principal Data Scientist at TikTok), and self-described robopsychologist. She has ADHD and views her neurodivergence as something which enables her to work across many different domains, see connections others miss, and generate work at extraordinary speed. Her side hustle during her doctorate was live club DJing.
+
+She originally intended to include a brief mention of her focus playlist on her About page, but found herself unable to encounter a behavioral phenomenon without taxonomizing it. This project page is the result: a full breakdown of exactly why and how her ADHD focus playlist works, and why she wants to share it with others.
+
+## The Playlist
+
+Spotify Playlist ID: 75ZbuIdCJWXIZRkidseQZN
+The playlist is not necessarily "good" music by many mainstream tastes, but it helps with focus during deep work periods via high sensory engagement and bilateral stimulation.
+
+## Why This Specific Combination Works for Concentration
+
+### Left-to-Right Panning (Bilateral Stimulation)
+When sound "bounces" between your ears, it forces both hemispheres of the brain to stay engaged and communicate. This is similar to techniques used in EMDR therapy; it creates a rhythmic, physical sensation in the brain that can be very grounding and helps quiet the "background noise" of racing thoughts.
+
+### 140-150 BPM (High Arousal)
+This tempo provides the "dopamine hit" an ADHD brain needs to reach an optimal level of arousal. Lower tempos might not be stimulating enough to keep your interest, leading your mind to wander.
+
+### Polyrhythms and Polyphony (Complexity)
+Simple, repetitive music can become "invisible" to an ADHD brain, leading to boredom. Complex layers (polyrhythms) provide enough cognitive "work" to keep your executive functions occupied so they don't go looking for distractions elsewhere.
+
+## The Mechanism (Detailed)
+
+It's less about brainwave entrainment and more about occupying the brain's "extra" bandwidth. By giving your mind a complex, fast-moving, and physically moving (panning) stimulus, you're effectively "locking" it into the current moment. Most tracks are in the 140-150 BPM "high tempo" range.
+
+### 1. The "140-150 BPM" (High Tempo)
+**The Theory:** This aligns with the Optimal Stimulation Theory (Zentall), which suggests ADHD brains are chronically under-aroused. To function at a baseline level, the brain seeks "extra-task stimulation." Fast music provides this missing stimulation so your brain doesn't have to seek it elsewhere (distraction).
+
+### 2. Bilateral Panning (Bouncing Audio)
+**The Theory:** This is derived from Bilateral Stimulation (BLS), the core mechanism of EMDR (Eye Movement Desensitization and Reprocessing) therapy.
+
+**The Mechanism:** BLS is empirically proven to help regulate the parasympathetic nervous system, reducing the "fight or flight" anxiety that often accompanies ADHD "paralysis."
+
+**The Focus Connection:** While primarily studied for trauma and anxiety, the ADHD community has adopted "8D Audio" (exaggerated panning) because the physical sensation of sound moving essentially "occupies" the spatial awareness part of your brain. If that part of your brain is busy tracking the sound, it can't scan the room for distractions.
+
+### 3. Polyrhythms and Polyphony (Complexity)
+**The Theory:** Stochastic Resonance. This principle suggests that adding a certain level of "noise" (randomness or complexity) to a signal can actually enhance the detection of that signal.
+
+**Why Simple Beats Fail:** Simple, repetitive beats (like a basic metronome) are easily predicted by the brain. Once the pattern is learned, the ADHD brain "tunes it out" and gets bored.
+
+**Why Polyrhythms Work:** Complex, layered rhythms (polyphony) maintain a high cognitive load. They are unpredictable enough to keep the brain's "novelty seeking" drive engaged, but structured enough not to be startling.
+
+## Summary of Combined Effect
+
+The playlist works because it creates a "high-stimulation, low-anxiety" state. The BPM fixes the under-arousal (boredom), the panning fixes the anxiety (grounding), and the polyrhythms prevent habituation (tuning it out).
+
+## Meta-Framing for the Project Page
+
+This was only intended to be a playlist inclusion on an About page. But Dr. Leffew literally cannot encounter a behavioral phenomenon without taxonomizing it. So here is a whole breakdown of exactly why and how the playlist works and why she wants to share it with others. This meta-awareness (the inability to not analyze) is itself a demonstration of the cross-domain analytical drive that characterizes her work: the same methods she uses to measure implicit signals in mass murderer communications, AI system outputs, and child safety detection systems are the methods she cannot help applying to her own listening habits.
+
+## Author Background Relevant to This Topic
+
+- PhD in quantitative predictive linguistics (computational psycholinguistics)
+- ADHD, viewed as enabling cross-domain work and rapid pattern recognition
+- Former live club DJ during doctoral studies
+- Clinical psychology background including familiarity with EMDR
+- Career built on extracting implicit signals from behavioral data
+- Applies measurement science to everything, including personal behavioral phenomena
