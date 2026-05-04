@@ -1,0 +1,34 @@
+Review Notes: Technical Framework Specification: AutoResearch & Autonomous Heuristic Discovery
+
+1. Core Directives & Architecture
+- Goal: Transition from manual, siloed search products to an integrated, agent-driven discovery loop.
+- Method: Uses LLM orchestration to synthesize disparate data signals into a unified entity view.
+- Constraints: Token efficiency requires "Skill-Based Routing"; Retrieval quality requires "Unified Person-Centric Search" combining name, phone, email, location; Iteration relies on "Learning-to-Rank (LTR) Versioning" for tracing ER logic.
+- IP Anonymization Note: "Spokeo" -> "regulated bureau data" or "external identity aggregator". "LinkedIn" -> "professional network graph". "PDL" -> "vendor-provided data bundles". "Gemini 2.5 Flash" -> "production-grade LLM". "Golf" -> "legacy work history mart".
+
+2. LTR Versioning History
+- v0: Synthetic Baseline. Pipeline functional on 24,970 observations using Pointwise + LTR two-stage architecture.
+- v1: Raw Vendor Path. Failed due to zero cross-vendor overlap (single-vendor bias). Root cause was row-level IDs preventing join; requires joining against person_links to resolve to canonical person ID.
+- v2: Mart-Based (Prod). Achieved 79.3% employer agreement with legacy mart. Identified need for temporal features (start/end dates).
+- v3: Independent Plan. Eliminates legacy mart dependency via direct person_links join.
+- v4: Employer ER. Focuses on employer-scoped PIDs. Gated waterfall process authorized.
+
+3. Gated Waterfall Logic
+- 4 gates to validate heuristics before production.
+- Gate 1: Professional Network Bridge (>=50% fill rate).
+- Gate 2: Persistent ID Bridge (>=70% fill rate).
+- Gate 3: Stock Ticker Bridge (sparse, kept for public companies).
+- Gate 4: Fuzzy Match Bridge (<5% false merge rate, achieved 2.6% with 'low' confidence).
+
+4. LLM Orchestration & Routing
+- Two-Pass Routing: Replaces single-pass calls. 
+- Pass 1 sends lightweight routing prompt (~248 tokens) with 1-line tool summaries to get required skills.
+- Pass 2 loads full schemas. Saves 71-99% tokens. Enrichment bypasses router.
+- 16 total tools divided into Global (always-available) and Routed (skill-based).
+- Tools include search_by_id, enrich_by_id, name_cluster_search, etc.
+
+5. Data Persistence & Analytics
+- Primary DB: PostgreSQL with pgvector for semantic search.
+- Cache: Redis/Valkey. Identity Key: canonical person ID.
+- Evaluation metrics: Held-out vendor prediction, cross-vendor consensus, temporal plausibility, stability under perturbation.
+- Psycholinguistic modeling: Markov Transition Model to predict search failure based on interaction sequence. Detects "Stuck User" loops.

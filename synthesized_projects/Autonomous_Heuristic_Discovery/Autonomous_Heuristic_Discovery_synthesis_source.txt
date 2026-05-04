@@ -1,0 +1,85 @@
+Technical Framework Specification: AutoResearch & Autonomous Heuristic Discovery
+1. Framework Overview and Core Directive
+The  AutoResearch Framework  is an autonomous system architected for heuristic discovery, validation, and iteration within the Spokeo identity graph. The primary objective is to engineer a transition from manual, siloed search products—where identifiers are isolated in legacy buckets—to an integrated, agent-driven discovery loop. This loop leverages LLM orchestration to synthesize disparate data signals into a unified entity view.Fundamental Architectural Goals:
+* Token Efficiency:  System MUST implement  Skill-Based Routing  to ensure models consume only the specific tool schemas required for the immediate task pass.
+* Retrieval Quality:  Transition from legacy silos to a  Unified Person-Centric Search , treating name, phone, email, and location as joint evidence rather than separate search lanes.
+* Heuristic Iteration:  Utilize  Learning-to-Rank (LTR) Versioning  to trace and deploy improving entity resolution (ER) logic based on automated evaluation metrics.
+2. Evolutionary Architecture: Employment LTR Versioning History
+The framework's development, as documented in EMPLOYMENT_LTR_VERSION_HISTORY.md, follows an iterative trajectory from synthetic baselines to independent vendor loading.| Version | Trajectory/Mode | Key Outcomes/Failures | Decisions Carried Forward || ------ | ------ | ------ | ------ || v0 | Synthetic Smoke | Pipeline mechanics functional; end-to-end flow confirmed on 24,970 observations. | Automated threshold selection; Pointwise + LTR two-stage architecture as default. || v1 | Raw Vendor Path | FAIL:  Zero cross-vendor overlap; single-vendor bias (17_02_01 only). | Raw vendor path is unusable without person_links join; pivot to mart-based loading. || v2 | Mart-Based (Prod) | Active production; uses Golf Work History Mart; 79.3% employer agreement with legacy. | Identify need for temporal features (start/end dates) to resolve concurrent role ambiguity. || v3 | Independent Plan | Eliminates "Golf" dependency via direct person_links join. | Implement vendor-to-LTR loading; add temporal signals to feature engineering. || v4 | Employer ER | Focuses on employer-scoped PIDs to mitigate name-string fallback defects. | Prototype v2 resulted in  FAIL  on unresolved_pct and Tier 2 multi-vendor entity pct. |
+Root Cause of v1 Failure:  The spk_record_id_split_linked field was identified as a vendor-prefixed, row-level identifier. Consequently, records from different vendors never shared a key, rendering cross-vendor consensus impossible.  Architectural Requirement:  All raw vendor data MUST be joined against the person_links (L03_35_01) table to resolve records to a canonical spk_person_id before LTR processing.
+3. Autonomous Heuristic Discovery: The Gated Waterfall Logic
+To resolve employer entities (v4), the framework utilizes a "Gated Waterfall" process to validate heuristics before production authorization.The Four-Gate Evaluation Process:
+* Gate 1 (LinkedIn Bridge):
+* Criterion:  raw_work_url_linkedin fill rate in  $\ge$  3 vendors.
+* Threshold:   $\ge$  50%.
+* Measured Outcome:  Vendor 22_01_01 failed (27.83%), while 22_01_06 and 17_02_01 passed. Tier 2 remains include_conditional only for vendors with measured coverage.
+* Gate 2 (Persistent ID Bridge):
+* Criterion:  raw_work_company_persistent_id fill in both PDL vendors.
+* Threshold:   $\ge$  70%.
+* Measured Outcome:  77.6% for 22_01_06; 27.8% for 22_01_01. Tier 1 set to include_conditional.
+* Gate 3 (Stock Ticker Bridge):
+* Criterion:  raw_work_company_ticker sparse bridge viability.
+* Threshold:  Coverage characterization.
+* Measured Outcome:  3.95%–10.73% coverage. Tier 3 retained for public company records.
+* Gate 4 (Fuzzy Match Bridge):
+* Criterion:  Tier 5 false merge rate.
+* Threshold:  < 5%.
+* Measured Outcome:  2.6%. Authorized with er_confidence='low'.Tier Authorization System:  | Tier | Signal | Status | | :--- | :--- | :--- | | 1 | PDL company persistent ID | include_conditional (enabled where value present) | | 2 | LinkedIn company URL slug | include_conditional (enabled where value present) | | 3 | Stock ticker + name overlap | include_conditional (implemented for public companies) | | 4 | SIC/NAICS + name blocking | defer (not activated in current prototype) | | 5 | Name fuzzy match + size band | include (authorized with low confidence label) |
+4. LLM Orchestration: Progressive Tool Disclosure & Skill-Based Routing
+The framework replaces legacy "single-pass" LLM calls with a  Two-Pass Routing  architecture to maximize token efficiency and prevent instruction drift.Execution Logic:
+* Pass 1: Tool Router:  The system MUST send a lightweight routing prompt (~248 tokens) containing 1-line tool summaries. The LLM returns a JSON array of required "skills."
+* Pass 2: Execution:  Only the full schemas and rich, step-by-step "skill" instructions for the selected tools are loaded into the context.
+* Enrichment Bypass:  System MUST bypass the router for enrichment workflows. The LLM receives all tools upfront to plan multi-step execution paths.Token Comparison by Scenario:  | Scenario | Legacy Single-Pass (All Tools) | New Skill-Based (Routed) | Token Savings | | :--- | :--- | :--- | :--- | | Phone Search | ~21,000 chars | ~293 chars + routing |  ~99%  | | Name Search (Chat) | ~21,000 chars | ~3,306 chars + routing |  ~84%  | | Employment Search | ~21,000 chars | ~6,130 chars + routing |  ~71%  |
+5. Technical Specification of the Agentic Tool Surface
+The system provides 16 tools, classified by access pattern to prevent model confusion.Architectural Flaw Note:  The current Ruby SearchType::AiSearch implementation employs a "winner-take-all" router that forces the query into a single bucket (name, phone, address, or social). This siloed approach blocks unified person-centric retrieval. System evolution MUST merge these into a single search_people skill.
+Always-Available Tools (Global Scope)
+These tools bypass the router to ensure baseline utility.
+{
+  "search_by_id": "Retrieve detailed profile by Spokeo person identifier.",
+  "enrich_by_id": "Apply secondary data enrichment to a specific entity ID.",
+  "employment_record": "Retrieve detailed job-level metadata for a specific record.",
+  "web_search": "General knowledge fallback for non-proprietary data.",
+  "get_current_date": "Temporal grounding for recency and age math.",
+  "search_messages": "Semantic search across the active conversation history.",
+  "spokeo_cancel_and_refund": "Handle account and subscription management intents."
+}
+
+
+Skill-Based Tools (Routed Scope)
+These tools are only disclosed upon Pass 1 routing.
+{
+  "name_cluster_search": "Advanced name-based people search with nested field support.",
+  "search_by_phone": "Reverse phone lookup using 10-digit US numbers.",
+  "search_by_email": "Identity retrieval via complete email address.",
+  "search_by_username": "Social profile search by handle/username.",
+  "search_by_address": "Resident and property search by street/city/state.",
+  "criminal_records_search": "Access court and criminal history data (requires 'court' feature).",
+  "historical_records_search": "Access archived/historical snapshots (requires 'court' feature).",
+  "employment_history_search": "Find professional history by person name.",
+  "business_contacts_search": "Find professional contacts by company/industry."
+}
+
+
+6. Data Integration & Persistence Layer
+* Inference:  Gemini 2.5 Flash / 2.0 Flash (optimized for function calling).
+* Primary Database:   PostgreSQL  with  pgvector  for semantic search over chat history.
+* Caching:   Redis/Valkey  (Standalone for dev; Cluster for production).
+* Identity Key:  spk_person_id.
+* Critical Defect:  59.3% of unique mart rows currently fall back to name-string identifiers because entity resolution failed at the mart build layer.
+* Constraint - Data Independence:  Architectural Warning: Vendors  22_01_01  (PDL Primary) and  22_01_06  (PDL Experience) are not independent; both are subsets of the same bulk delivery. LTR models MUST NOT treat corroboration between these two as an independent consensus signal.
+7. Evaluation Framework & Behavioral Analytics
+Since external ground truth is unavailable, the framework utilizes internal metrics to assess quality.Internal Metrics (v3):
+1. Held-out Vendor Prediction:  Train on  $N-1$  vendors; test against the  $N^{th}$  vendor for overlapping persons.
+2. Cross-vendor Consensus:  Average vendor count corroborating the top-1 ranked employer.
+3. Temporal Plausibility:  Fraction of top picks where is_current=1.
+4. Stability under Perturbation:  Rate of top-pick changes when a vendor is excluded.Interaction Sequence & Psycholinguistic Modeling:  The system MUST implement a  Markov Transition Model  to predict search failure.
+* Analytic Thinking (Linguistic Feature):  High analytic thinking in a prompt indicates structured identifiers; low thinking/high emotional tone indicates a  "Stuck User" loop .
+* Trajectory Analysis:  Cluster sequences (e.g., NAME_SEARCH -> REFORMULATE -> REFORMULATE). Transition probabilities MUST be used to detect repair loops and trigger automated clarifying questions (e.g., "Would you like to add a city or state?") to resolve ambiguity before abandonment.
+8. Implementation Roadmap: The Independence Plan
+The objective of the Independence Plan is to achieve a vendor-independent LTR pipeline, eliminating the "Golf" mart dependency.
+* WC-01:   Primary Blocker:  Implementation of the person_links join within claims_loader.py to resolve raw vendor parquets to spk_person_id.
+* WC-02:  Integration of temporal signals (start/end dates) into the feature engineering pipeline.
+* WC-03:  Development of an independent source contract for raw vendor parquets.
+* WC-04–WC-06:  Evaluation and gating of employer entity resolution bridges.
+* WC-07:  Addition of "Golf chronology rank" as a feature for ensemble evaluation.
+* WC-08:  Verification of the vendor-direct path against resolved identity keys. (Note: Current v2 prototype fails on multi-vendor entity pct; WC-08 MUST iterate on bridge logic).
