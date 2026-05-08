@@ -81,7 +81,7 @@ Pages are constructed using alternating horizontal bands to segment information:
 When building interactive simulators or tables, you must ensure the CSS scopes correctly for both environments (e.g., `.band--paper .sim-panel { background: #fff; border-color: var(--paper-3); }`).
 
 ## 4. The Master CSS Grid & Portrait Mode Polish (Global Layout Mandate)
-**CRITICAL:** Never use arbitrary pixel offsets or `margin: 0 auto` centering for desktop text columns. 
+**CRITICAL:** Never use arbitrary pixel offsets, `margin: 0 auto` centering for desktop text columns, or `display: flex; align-items: center;` to override the band structure. 
 The portfolio typography is powered by a native **Master CSS Grid** on breakpoints >= 1240px. 
 Every `<section class="band">` acts as a grid container that mathematically balances the 680px reading column, the 400px right-gutter Sidenotes, and the full-width components.
 
@@ -89,6 +89,10 @@ Every `<section class="band">` acts as a grid container that mathematically bala
 /* MASTER GRID & PORTRAIT MODE POLISH */
 :root { --grid-left: max(32px, calc(50vw - 540px)); }
 @media (min-width: 1360px) { :root { --grid-left: max(260px, calc(50vw - 540px)); } }
+
+section.band:not(.front) {
+  display: block; /* Fallback for small screens, do NOT use flex here */
+}
 
 @media (min-width: 1240px) {
   section.band:not(.front) {
@@ -108,8 +112,17 @@ Every `<section class="band">` acts as a grid container that mathematically bala
     width: 100%; max-width: none;
   }
 }
+/* Ensure paragraphs wrap properly on all viewports */
+p, li, .abstract, .r-intro, .p-desc, .db-desc {
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
 /* Portrait Mode Space Fix */
 .front { min-height: clamp(400px, 80vh, 850px) !important; justify-content: center !important; }
 ```
 
-*This guarantees zero layout collisions via responsive browser reflow. Furthermore, on small laptop screens (1180px - 1359px), the left navigation `#spine` is forced into a sleek hover-expand state (44px collapsed) to prevent it from overlapping the reading column. On screens >= 1360px, the grid safely pins to a 260px left margin to permanently display the spine.*
+## 5. Performance Mandates (The "Stutter" Fixes)
+**CRITICAL:** 
+1. **Single WebGL Context**: Never instantiate more than one WebGL canvas (e.g. `Three.js` or raw `gl`) across the viewport. If multiple layers (like stars and networks) are required, they must be composited within the *same* Three.js scene.
+2. **No Backdrop Filter Thrashing**: Refrain from using `backdrop-filter: blur()` over moving WebGL elements. It forces the browser to recalculate the blur every frame, causing severe GPU stutter. Solid or semi-opaque colors are required.
+3. **ScrollTrigger Refresh Caution**: Do not aggressively fire `ScrollTrigger.refresh()` on every expanding element without a delay, as this causes massive layout thrashing.
