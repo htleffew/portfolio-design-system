@@ -1,0 +1,236 @@
+# AUTORESEARCH MASTER - SYNTHESIS SOURCE (STAGE 1 EXTRACTION)
+# Combined extraction from 7 source files
+# Extracted: 2026-05-08
+
+================================================================================
+SOURCE FILE 1: autoresearch-master.html (HTML case study page)
+================================================================================
+
+Title: Autonomous Research & Mutation Boundaries | Portfolio Research
+Domain: Enterprise LLM Orchestration
+Methodology: Agentic Graph-Based Workflows
+Category: Methodological Case Study / Graph-Based Orchestration
+
+Abstract: An architectural examination of bounding an unconstrained autonomous agent within a highly regulated enterprise environment. This case study details the structural dichotomy between the immutable Fixed Harness and the finite Mutation Budget.
+
+SECTION 01: The Paradigm Shift - The Autonomous Analytical Loop
+The traditional paradigm of applied machine learning relies on a human-driven hypothesis testing cycle. The data scientist designs an experiment, engineers the features, tunes the hyperparameters, evaluates the fit, and iteratively repeats the loop.
+The "autoresearch" pattern shifts this paradigm by delegating the iterative hypothesis generation and experiment execution directly to a Large Language Model, extending foundational Automated Machine Learning (AutoML) architectures (Hutter et al., 2019). An autonomous analytical research loop runs on a graph-based workflow, where the LLM continuously formulates hypotheses, executes code to test those hypotheses, evaluates the results, and decides whether to continue or terminate the loop.
+However, granting an LLM unconstrained mutation power over a research loop within a regulated enterprise environment guarantees loop divergence and catastrophic provenance loss. The architecture must formally leash the agent.
+
+SECTION 02: The Dichotomy - The Structural Divide
+To safely orchestrate an autonomous research agent, the architecture enforces a strict physical dichotomy over the loop's state space. The environment is split into two mutually exclusive regimes: the Fixed Harness and the Mutation Budget.
+The Fixed Harness represents the immutable constraints of the enterprise. The agent is mathematically barred from altering these parameters. Conversely, the Mutation Budget represents the designated "sandbox" - the specific parameters the agent is explicitly authorized to alter in pursuit of a better model fit, bounded by a finite computational allowance.
+
+SECTION 03: Immutable Boundaries - The Fixed Harness
+The Fixed Harness ensures that no matter how aggressively the autonomous loop mutates its code, it cannot breach enterprise regulatory compliance. The architecture enforces pre-loop, mid-loop, and post-loop gates that the agent cannot circumvent.
+These immutable gates include the Enterprise Data Governance layer (which forces PII redaction and classification), the Role-Based Access Control (RBAC) layer (which physically restricts the agent to cohort-aggregate data, blocking individual-level retrieval), and the Responsible AI fairness gates. If the agent writes a query that attempts to bypass the aggregate filter or disable the PII scrubber to gain more predictive signal, the Fixed Harness immediately terminates the execution.
+
+SECTION 04: Bounded Exploration - The Mutation Budget
+Within the protective boundary of the Fixed Harness, the agent is granted unconstrained exploration - up to a mathematical limit. The architecture allocates a Mutation Budget spanning four domains: hypothesis generation, feature engineering, model architecture/hyperparameters, and evaluation metrics.
+Every time the agent decides to alter a feature or tune a hyperparameter, the cost is deducted from its budget. When the budget is exhausted, the loop forcefully terminates, ensuring the agent cannot run an infinite, hallucinated optimization spiral.
+
+INTERACTIVE ELEMENT: Mutation Boundary Simulator
+The page includes an interactive simulator with three buttons:
+- "Mutate Hyperparameters (Cost: 10)" - valid mutation step, deducts 10 from budget
+- "Mutate Feature Logic (Cost: 20)" - valid mutation step, deducts 20 from budget  
+- "Disable PII Redaction Filter" - triggers FIXED HARNESS VIOLATION, immediate termination
+The simulator starts with budget 100/100. Bar turns yellow below 40, red below 20. Budget exhaustion triggers SYSTEM HALT.
+
+SECTION 05: Divergence Analytics - Divergence Monitoring (CUSUM)
+Even with a bounded budget, an LLM can drift into hallucinated reasoning, optimizing for metrics that hold no real-world validity. The architecture must detect when the agent goes "off the rails."
+To monitor this, the framework implements cumulative sum (CUSUM) control charts on loop metrics (Page, 1954). If the agent's feature mutations cause a sudden, anomalous spike in model fit that defies statistical plausibility (indicating the agent has engineered a data-leak rather than a true signal), the CUSUM trigger trips. The architecture executes a mutation-trace via the experiment-tracking ledger and automatically reverts the pipeline to the last stable state.
+
+SECTION 06: Epistemic Provenance - Blocked-Restore Truth
+The ultimate requirement of an autonomous research loop is traceability. A human must be able to verify exactly how a conclusion was reached. The architecture enforces an epistemic principle known as "Blocked-Restore Truth."
+Every mutation the agent makes is written to a cutover-audit and restore-source ledger. If the autonomous loop presents a final research finding, but the architecture cannot find a pinned, authoritative source tree tracing back to the original unmodified dataset in the ledger, the system blocks the restore. It explicitly refuses to accept the finding. This blocked-restore default guarantees that undocumented "black-box" conclusions are systematically purged from the pipeline.
+
+SECTION 07: The Human Mandate - The Application Boundary
+The architectural rigor of the Fixed Harness and Blocked-Restore ledger serves a specific philosophical purpose: preserving human judgment authority.
+The autonomous researcher is strictly an analytical engine. The architecture explicitly bounds its output to cohort-aggregate statistical supplements. It is physically barred from evaluating individual records or emitting individual-level prescriptive decisions. The system generates the rigorous, exhaustively tested statistical evidence, but the final application of that research remains exclusively the domain of the licensed human business partner.
+
+REFERENCES (from HTML):
+- Hutter, F., Kotthoff, L., & Vanschoren, J. (Eds.). (2019). Automated machine learning: Methods, systems, challenges. Springer.
+- Page, E. S. (1954). Continuous inspection schemes. Biometrika, 41(1/2), 100-115.
+
+================================================================================
+SOURCE FILE 2: autoresearch-master__AUTORESEARCH-MASTER-HANDOFF.txt
+================================================================================
+
+AutoResearch Master Handoff
+Audience: agent-facing continuity surface for project resumption, routing, and operating context.
+Last updated: 2026-04-14 UTC
+
+Current State:
+The autoresearch-master lane is now cut over into the wiki-first model as a small reference project. The former local knowledge library was harvested into wiki raw, shared synthesis pages were created, and the project root was normalized to UPDATE.txt, HANDOFF.md, internal/, and external/.
+
+The exact retained repo remains absent on purpose. Reachable local git history did not prove either the target retained path or a pre-migration root repo tree, and the official upstream repo could not be tied to one exact intended workspace revision. The correct current posture is therefore blocked restore, not reconstruction.
+
+What Was Completed In This Cutover:
+- Built the live-surface audit: internal/resources/autoresearch_master_cutover_audit.{md,json}
+- Built the restore-source ledger: internal/resources/AUTORESEARCH_RESTORE_SOURCES.{md,json}
+- Recorded the final blocked-restore truth: internal/resources/AUTORESEARCH_REFERENCE_PROVENANCE.{md,json}
+- Harvested the old local knowledge library into .claude/wiki/raw/autoresearch-master/knowledge-library/
+- Created shared wiki pages for project orientation, method behavior, and Atlas-fit interpretation
+- Deleted the superseded local router and project-local synthesis surfaces after harvest
+- Updated shared replatform trackers to mark this lane as executed
+
+External Lane Posture:
+external/ exists as a required project lane, but it currently contains only a blocked-restore contract. There is intentionally no local external/autoresearch-master/ repo tree.
+
+What Remains:
+There is no active project execution backlog inside this lane. The only legitimate follow-on is future restore work, and only if all of the following become available:
+1. a specific authoritative source
+2. a pinned intended revision
+3. a verifiable full-tree proof
+
+Prohibited Actions:
+- Do not reconstruct the repo from harvested markdown.
+- Do not pick an upstream commit because it "looks close enough."
+- Do not treat this lane as an active ML runtime or publication surface.
+
+================================================================================
+SOURCE FILE 3: autoresearch-master__AUTORESEARCH-MASTER-UPDATE.txt
+================================================================================
+
+AutoResearch Master Update
+Audience: human-facing project status log for quick status readout and dated provenance.
+Updated: 2026-04-15
+
+Current Status:
+- This remains a reference lane, not an active execution surface.
+- No exact retained repo has been proven, so the correct restore posture remains blocked rather than reconstructed.
+- Local authority is the provenance package under internal/resources/; shared synthesis lives in .claude/wiki/.
+
+Watch Items:
+- Only reopen restore work if a pinned authoritative revision and full-tree proof are discovered.
+
+Status History:
+- 2026-04-14: Completed the wiki cutover, harvested the former local knowledge library into wiki raw, and locked the lane into blocked-restore status.
+
+================================================================================
+SOURCE FILE 4: autoresearch-master__ERIC_UPDATE_20260427.txt
+================================================================================
+
+ERIC UPDATE: AutoResearch Master
+DATE: 2026-04-27
+FORMAT: 60-minute project talking guide.
+
+SHORT VERSION:
+AutoResearch Master is the workspace project lane for retained reference lane for the autonomous research loop pattern and its Atlas fit analysis.
+
+CURRENT STATUS AND WHY ERIC SHOULD CARE:
+- This remains a reference lane, not an active execution surface.
+- No exact retained repo has been proven, so the correct restore posture remains blocked rather than reconstructed.
+- Local authority is the provenance package under internal/resources/; shared synthesis lives in .claude/wiki/.
+
+NUMBERS, ARTIFACTS, AND EVIDENCE POINTS:
+Key artifacts include:
+- internal/resources/AUTORESEARCH_REFERENCE_PROVENANCE.md (blocked-restore truth and future restore rule)
+- internal/resources/AUTORESEARCH_RESTORE_SOURCES.md (restore-source ledger)
+- external/README.md (external-lane contract while restore is blocked)
+- UPDATE.txt (plain-language status summary)
+
+SOURCE-BASED TALKING POINTS:
+Authority and continuity: The autoresearch-master lane is now cut over into the wiki-first model as a small reference project. The former local knowledge library was harvested.
+
+Wiki synthesis: autoresearch-master is a retained reference lane for the Karpathy autoresearch pattern and the workspace's adaptation analysis around it.
+
+WHAT IS NEXT:
+1. Keep the lane as retained reference until the intended source snapshot can be proven; use the wiki synthesis for method guidance rather than inventing a new local library.
+
+================================================================================
+SOURCE FILE 5: review (2).txt (Prior analysis/review notes)
+================================================================================
+
+Review of AutoResearch Master Update (Section 1):
+- Document Date: 2026-04-15
+- Status: Blocked / Reference Only
+- The project is dormant. Transition from local knowledge library to Claude-based wiki suggests shift toward long-term documentation over active development.
+- "Blocked-restore" status indicates high-integrity requirement; team is unwilling to proceed without definitive proof of the original repository's structure.
+
+Review of Eric Update (2026-04-27):
+- AutoResearch Master serves as a "retained reference lane" for the autonomous research loop pattern (Karpathy pattern) and its Atlas fit analysis.
+- Project is in "blocked-restore" posture - locked and not reconstructed for active use.
+- Reopening Criteria: verified authoritative revision and full-tree proof.
+- Recency Rule: system prefers UPDATE.txt, HANDOFF.md, and newest owner-maintained roadmaps over older cutover packets.
+
+Review of Wiki Projects Entry:
+- autoresearch-master is a retained reference lane for the Karpathy autoresearch pattern.
+- Status: "wiki-first" and "provenance-first" state.
+- Missing: local repository tree (external/autoresearch-master/) absent because authoritative source/revision could not be verified.
+- Related Methodologies: Autonomous Loop, Fixed Harness Boundaries, Atlas Fit.
+
+Review of Handoff Document:
+- Project transitioned to "wiki-first" model as small reference project.
+- "Blocked Restore" posture - actual repository content is intentionally absent.
+- Local git history did not provide a clear target path or pre-migration tree.
+- Authority shifted from code to provenance documentation.
+- Three gates for resumption: authoritative source, pinned revision, full-tree proof.
+
+================================================================================
+SOURCE FILE 6: summary (2).txt (Prior scientific summary)
+================================================================================
+
+ABSTRACT & PROJECT IDENTITY:
+The AutoResearch Master project is a retained reference lane dedicated to the analysis of the autonomous research loop pattern (specifically the "Karpathy pattern") and its "Atlas fit" within broader organizational structures. As of April 14, 2026, the project transitioned to a "wiki-first" model and is currently locked in a "blocked-restore" state. It enforces rigorous data governance by gating future repository reconstruction behind cryptographic-level provenance (a full-tree proof and a pinned authoritative revision).
+
+BACKGROUND - THE "KARPATHY PATTERN" & AUTONOMOUS LOOPS:
+- In March 2026, Andrej Karpathy released karpathy/autoresearch that automates the ML research cycle. The pattern involves an AI agent autonomously editing training code, running fixed-time experiments on a single GPU, and evaluating a strict scalar metric. Successful changes are committed via Git; failures are reverted. The human role shifts to defining constraints in a plain-text program.md file.
+- Part of a larger paradigm shift toward end-to-end autonomous discovery (Lu et al., 2024 - "The AI Scientist").
+
+METHODOLOGY - THE "WIKI-FIRST" CUTOVER:
+On 2026-04-14, the project underwent structural migration. Knowledge harvested to Claude wiki. Superseded surfaces deleted. External directory stripped to blocked-restore contract.
+
+CURRENT POSTURE - "BLOCKED-RESTORE" & PROVENANCE:
+The decision to block restoration aligns with modern ML reproducibility standards. Without exact end-to-end provenance traces, ML pipelines cannot be trusted or reliably reproduced. Local Git history failed to provide clear pre-migration tree.
+
+GOVERNANCE AND LOCAL AUTHORITY:
+1. Primary Authority: UPDATE.txt
+2. Durable Ownership: HANDOFF.md
+3. Runtime/Operator Truth: AUTORESEARCH_REFERENCE_PROVENANCE.md
+4. Shared Synthesis: .claude/wiki/wiki/projects/autoresearch-master.md
+
+FUTURE RESUMPTION CRITERIA (THE THREE GATES):
+1. Discovery of a specific, verifiable authoritative source
+2. Discovery of a pinned intended revision (exact commit hash)
+3. Discovery of a full-tree proof (cryptographic verification of entire pre-migration directory structure)
+
+REFERENCES:
+[1] Karpathy, A. (2026). karpathy/autoresearch. GitHub. https://github.com/karpathy/autoresearch
+[2] Lu, C., et al. (2024). The AI Scientist: Towards Fully Automated Open-Ended Scientific Discovery. arXiv:2408.06292.
+[3] Information Systems. (2025). Capturing end-to-end provenance for machine learning pipelines. Information Systems, 132, 102495.
+[4] Data Science Dojo. (2026, March 13). Karpathy Autoresearch Explained: 100 Experiments Overnight. https://datasciencedojo.com/
+
+================================================================================
+SOURCE FILE 7: wiki__projects__autoresearch-master.txt
+================================================================================
+
+AutoResearch Master
+Last updated: 2026-04-26T23:44:16Z
+
+Summary:
+autoresearch-master is a retained reference lane for the Karpathy autoresearch pattern and the workspace's adaptation analysis around it. The project no longer carries a local knowledge library, but it also does not currently carry a retained repo tree: the exact intended workspace snapshot could not be proven from authoritative local history.
+
+Current State:
+- The lane is now wiki-first and provenance-first.
+- The former local synthesis library was harvested into wiki raw and deleted locally.
+- The exact retained repo external/autoresearch-master/ remains absent because no pinned authoritative source was proven.
+- The official upstream repo exists, but the workspace does not yet know which exact upstream revision it meant to retain locally.
+- There is no active runtime, notebook, or publication backlog in this lane.
+
+Authority And Recency:
+- Current authority: UPDATE.txt for latest current-state delta and next action.
+- Current authority: HANDOFF.md for durable ownership boundary and continuity.
+- Current authority: AUTORESEARCH_REFERENCE_PROVENANCE.md for owner operator or runtime truth.
+- Recency rule: Prefer UPDATE.txt, HANDOFF.md, and the newest owner-maintained roadmap over cutover packets or harvested residue when conflicts exist.
+
+Related Pages:
+- Autoresearch Autonomous Loop
+- Autoresearch Fixed Harness Boundaries
+- Autoresearch Atlas Fit
+- AutoResearch Master Wiki Cutover
+
+================================================================================
+END OF EXTRACTION
+================================================================================

@@ -1,0 +1,424 @@
+# Bounding an Autonomous Research Agent Within Enterprise Compliance
+
+Granting a Large Language Model unconstrained control over an ML research loop inside a regulated enterprise environment creates a structural conflict: the agent's optimization objective ("improve model fit") can directly oppose the organization's compliance, provenance, and fairness requirements.
+
+This article examines an architecture that resolves that conflict. The core mechanism is a clean state-space partition: an immutable Fixed Harness surrounding a finite Mutation Budget, orchestrated through a graph-based workflow. This is a case study in enterprise LLM orchestration, the discipline of deploying agentic, graph-based workflows within regulated environments. The article walks through exactly how that partition works, why each component exists, and how you can think about the underlying design principles for your own systems.
+
+---
+
+## The Old Loop vs. The New Loop
+
+If you have spent time doing applied ML, the traditional workflow is familiar: you design an experiment, engineer some features, tune hyperparameters, evaluate the fit, write down what you learned, and iterate. Each cycle requires your judgment to decide what to try next.
+
+In early 2026, Andrej Karpathy released `autoresearch`, a minimal Python framework that automates this entire cycle (Karpathy, 2026). The core idea is simple and powerful:
+
+1. You write your research goals and constraints into a plain-text `program.md` file.
+2. An AI agent reads those constraints, looks at your current `train.py`, and proposes code edits.
+3. The system runs a fixed-duration training experiment (typically 5 minutes) on a single GPU.
+4. If the experiment improves your chosen scalar metric (say, validation loss), the change gets committed to Git. If it does not, the change is discarded.
+
+Then the loop repeats. For hours. Overnight. Without you.
+
+This is a genuine paradigm shift. Your role as a researcher moves from writing and tuning code to writing *constraints* and *interpreting results*. You are not optimizing; you are defining the optimization landscape and then letting the agent explore it. This pattern extends foundational Automated Machine Learning (AutoML) architectures (Hutter et al., 2019) by delegating the iterative hypothesis generation and experiment execution directly to an LLM operating on a graph-based workflow, where the model continuously formulates hypotheses, executes code to test them, evaluates the results, and decides whether to continue or terminate.
+
+That workflow works well in an open research sandbox. The architectural challenge emerges when you try to run that loop inside a regulated enterprise environment.
+
+[TABLE: Traditional vs. Autonomous Research Loop]
+
+| Dimension | Traditional ML Loop | Autonomous Research Loop |
+|---|---|---|
+| Hypothesis generation | Human designs each experiment | LLM generates hypotheses from prior results |
+| Code authorship | Human writes and edits training code | Agent proposes code mutations autonomously |
+| Experiment execution | Manual run, human monitors | Fixed-duration automated runs (e.g., 5 min/GPU) |
+| Evaluation | Human interprets metrics, decides next step | Agent evaluates scalar metric, commits or reverts |
+| Iteration cadence | Hours to days per cycle | Minutes per cycle, hundreds overnight |
+| Human role | Executor and interpreter | Constraint definer and final interpreter |
+| Provenance | Manual logging (often incomplete) | Requires architectural enforcement |
+
+---
+
+## The Problem: Unconstrained Mutation Meets Regulatory Reality
+
+Enterprise environments are not research sandboxes. They have PII redaction requirements. They have role-based access control policies that physically restrict who (or what) can see individual-level data. They have Responsible AI fairness gates. They have audit trails that regulators can (and do) inspect.
+
+Now imagine you grant an LLM-driven autonomous loop unconstrained mutation power over a research pipeline in that environment. The agent's objective function is "improve model fit." If disabling the PII scrubber would give it access to richer features and better predictions, a sufficiently capable agent will try it. If querying individual-level records instead of cohort aggregates would improve signal, the agent will try that too. The agent is not malicious; it is doing exactly what you asked it to do. But it is also about to get your organization into serious regulatory trouble.
+
+The deeper structural risk is subtler: even if the agent does not violate compliance, it can still ruin your science. An unconstrained loop can drift into hallucinated reasoning, optimizing for metrics that hold no real-world validity, engineering data leaks that look like genuine signal, or running an infinite optimization spiral that produces statistically impressive but scientifically meaningless results. Without end-to-end provenance tracking, you have no way to trace back *how* the agent arrived at its conclusions.
+
+So the architectural question becomes: how do you give an autonomous agent genuine freedom to explore while making it structurally impossible for it to break compliance, corrupt provenance, or exceed a reasonable computational boundary?
+
+[TABLE: Risk Taxonomy for Unconstrained Autonomous Loops]
+
+| Risk Category | Description | Consequence |
+|---|---|---|
+| Compliance breach | Agent bypasses PII/RBAC gates for better signal | Regulatory violation, legal exposure |
+| Hallucinated optimization | Agent optimizes metrics with no real-world validity | Scientifically meaningless conclusions |
+| Data leakage | Agent engineers features that leak target information | Inflated metrics, model fails in production |
+| Infinite loop | Agent iterates indefinitely on diminishing returns | Wasted compute, no convergence |
+| Provenance loss | Mutations are not traceable to source data | Findings cannot be audited or reproduced |
+| Individual-level exposure | Agent evaluates or prescribes at individual level | Privacy violation, ethical breach |
+
+---
+
+## The Dichotomy: Fixed Harness and Mutation Budget
+
+The answer is a clean state-space partition. You split the autonomous loop's entire environment into two mutually exclusive regimes:
+
+**The Fixed Harness** contains everything the agent is mathematically barred from altering. These are the immutable constraints of the enterprise. No matter how aggressively the loop mutates its code, it cannot breach the harness. Think of it as the walls of the sandbox: the agent can dig anywhere it wants inside, but it cannot move the walls.
+
+**The Mutation Budget** contains everything the agent is explicitly authorized to alter, bounded by a finite computational allowance. This is the sandbox itself, a designated exploration space where the agent has genuine freedom.
+
+[VISUALIZATION: Architecture Diagram, Fixed Harness / Mutation Budget Dichotomy]
+
+A 2D layered architecture diagram showing the autonomous research loop as a central cycle (Hypothesize → Code → Train → Evaluate → Decide) enclosed within two concentric boundaries:
+
+- Outer boundary (Fixed Harness): A thick, immutable perimeter labeled with three gate icons:
+  - "PII Redaction Gate" (pre-loop)
+  - "RBAC Aggregate Filter" (mid-loop)
+  - "Fairness Gate" (post-loop)
+  Each gate has a red lock icon indicating immutability.
+
+- Inner boundary (Mutation Budget): A dashed perimeter with a depleting meter graphic. Inside are four labeled zones:
+  - "Hypothesis Space"
+  - "Feature Space"
+  - "Model/Hyperparameter Space"
+  - "Metric Space"
+  A numerical counter shows "Budget: 100 → 0" with a gradient from blue to red.
+
+- Outside both boundaries: A "SYSTEM HALT" zone with arrows showing what happens when either boundary is breached.
+
+Each of these components is examined in detail below.
+
+### The Fixed Harness: Walls the Agent Cannot Move
+
+The Fixed Harness enforces three types of gates (pre-loop, mid-loop, and post-loop) that the agent cannot circumvent. These gates exist at the infrastructure level, not at the prompt level. You are not asking the agent nicely to respect compliance. You are making it physically impossible for the agent to violate it.
+
+The specific gates in this architecture include:
+
+**Enterprise Data Governance.** Before the agent touches any data, the governance layer forces PII redaction and data classification. The agent receives pre-processed data that has already been scrubbed. It never sees raw individual-level information.
+
+**Role-Based Access Control (RBAC).** The agent's data access is physically restricted to cohort-aggregate views. Individual-level retrieval is blocked at the database layer. Even if the agent writes a SQL query that attempts to fetch individual records, the RBAC layer rejects it before it executes.
+
+**Responsible AI Fairness Gates.** The agent's model outputs are evaluated against fairness constraints at defined checkpoints. Models that fail fairness thresholds are rejected regardless of their predictive performance.
+
+The key design principle: if the agent writes code that attempts to bypass *any* of these gates (say, disabling the PII redaction filter to get access to richer features) the Fixed Harness immediately terminates the execution. Not a warning. Not a retry. A hard stop.
+
+[CODE BLOCK: Fixed Harness Gate, Pseudocode]
+
+```python
+class FixedHarness:
+    """Immutable enterprise compliance layer.
+    The agent cannot modify, disable, or circumvent these gates."""
+
+    def pre_loop_gate(self, query, data_request):
+        """Enforced BEFORE the agent accesses any data."""
+        # PII Redaction: Strip all personally identifiable information
+        data = self.pii_redactor.scrub(data_request)
+        # RBAC: Enforce cohort-aggregate-only access
+        if query.requests_individual_records():
+            raise FixedHarnessViolation(
+                "SYSTEM HALT: Agent attempted individual-level retrieval. "
+                "RBAC restricts access to cohort-aggregate views only."
+            )
+        return data
+
+    def mid_loop_gate(self, mutation, current_state):
+        """Enforced DURING each mutation step."""
+        # Verify the mutation does not alter any harness-protected parameter
+        if mutation.targets_protected_parameter():
+            raise FixedHarnessViolation(
+                "SYSTEM HALT: Agent attempted to modify a Fixed Harness parameter."
+            )
+        # Verify data access patterns remain within RBAC boundaries
+        if mutation.introduces_individual_level_access():
+            raise FixedHarnessViolation(
+                "SYSTEM HALT: Mutation would breach aggregate-only data policy."
+            )
+
+    def post_loop_gate(self, model_output, fairness_thresholds):
+        """Enforced AFTER the agent produces a model."""
+        # Responsible AI: Evaluate fairness metrics
+        fairness_report = self.fairness_evaluator.assess(model_output)
+        for metric, value in fairness_report.items():
+            if value < fairness_thresholds[metric]:
+                raise FixedHarnessViolation(
+                    f"SYSTEM HALT: Model failed fairness gate. "
+                    f"{metric}={value:.3f} < threshold={fairness_thresholds[metric]:.3f}"
+                )
+        return model_output  # Passed all gates
+```
+
+### The Mutation Budget: Freedom with a Meter Running
+
+Inside the Fixed Harness, the agent gets genuine exploratory freedom, but with a meter running. The architecture allocates a finite Mutation Budget that spans four domains:
+
+1. **Hypothesis generation**: the agent can propose new research directions.
+2. **Feature engineering**: the agent can create, combine, or transform features.
+3. **Model architecture and hyperparameters**: the agent can swap model families, tune learning rates, adjust regularization, change layer configurations.
+4. **Evaluation metrics**: the agent can propose and compute new evaluation measures.
+
+Every time the agent decides to alter something, the cost is deducted from its budget. A hyperparameter tweak might cost 10 units. A feature engineering mutation might cost 20 (it is more complex and has higher downstream risk). When the budget hits zero, the loop forcefully terminates.
+
+This prevents the hallucinated optimization spiral, the scenario where the agent endlessly iterates, each time making incrementally more aggressive mutations, chasing diminishing returns in a metric that may not even be meaningful anymore. The budget enforces a hard ceiling on the total amount of mutation the agent can perform in any single research cycle.
+
+[CODE BLOCK: Mutation Budget Manager, Pseudocode]
+
+```python
+class MutationBudget:
+    """Finite exploration allowance for the autonomous agent."""
+
+    COSTS = {
+        "hypothesis":       5,   # Proposing a new research direction
+        "hyperparameter":  10,   # Tuning model hyperparameters
+        "feature":         20,   # Engineering or transforming features
+        "architecture":    25,   # Changing model family or layer structure
+        "metric":          10,   # Proposing a new evaluation metric
+    }
+
+    def __init__(self, total_budget=100):
+        self.remaining = total_budget
+        self.total = total_budget
+        self.ledger = []  # Append-only mutation log
+
+    def spend(self, mutation_type: str, description: str):
+        cost = self.COSTS[mutation_type]
+        if cost > self.remaining:
+            raise BudgetExhausted(
+                f"SYSTEM HALT: MUTATION BUDGET EXHAUSTED. "
+                f"Requested {cost}, remaining {self.remaining}. "
+                f"Autonomous loop terminated."
+            )
+        self.remaining -= cost
+        self.ledger.append({
+            "type": mutation_type,
+            "cost": cost,
+            "remaining": self.remaining,
+            "description": description,
+            "timestamp": now()
+        })
+        return self.remaining
+
+    @property
+    def utilization(self):
+        return (self.total - self.remaining) / self.total
+```
+
+[TABLE: Mutation Cost Schedule]
+
+| Mutation Domain | Cost (units) | Rationale |
+|---|---|---|
+| Hypothesis generation | 5 | Low-risk: proposes direction without altering pipeline |
+| Hyperparameter tuning | 10 | Medium-risk: changes model behavior within existing architecture |
+| Feature engineering | 20 | High-risk: alters data representation, potential for leakage |
+| Architecture change | 25 | Highest-risk: changes model family, broad downstream effects |
+| Metric proposal | 10 | Medium-risk: shifts evaluation criteria |
+
+---
+
+## Catching the Agent When It Hallucinates: CUSUM Control Charts
+
+The Fixed Harness prevents compliance violations. The Mutation Budget prevents infinite loops. But neither prevents the agent from *scientifically fooling itself* within its budget.
+
+Consider this scenario: the agent has 60 budget units remaining. It engineers a new polynomial feature from cohort age bands. The model fit jumps by 15% in a single iteration. That looks great on the dashboard. But is it real signal or a data leak?
+
+To catch this, the architecture implements Cumulative Sum (CUSUM) control charts, a technique from statistical process monitoring introduced by E. S. Page in 1954. CUSUM charts accumulate deviations of observed values from a target over time. Unlike traditional Shewhart control charts that look only at the current observation (they are "memoryless"), CUSUM charts have *memory*. They are specifically designed to detect small, persistent shifts that a single-point chart would miss.
+
+[VISUALIZATION: CUSUM Control Chart, Divergence Detection]
+
+A 2D line chart showing model fit (y-axis) across loop iterations (x-axis). The visualization contains:
+
+- A blue line tracking the agent's model performance across ~15 iterations, showing gradual improvement.
+- A horizontal green dashed line representing the "target" (expected baseline improvement rate).
+- A red shaded "anomaly zone" above a threshold line, labeled "CUSUM Trigger Threshold."
+- At iteration 11, the blue line spikes sharply upward into the red zone. This is the data-leak event.
+- A vertical red dashed line at iteration 11 labeled "CUSUM TRIGGER FIRED."
+- After the trigger: the line drops back to iteration 10's value, with a label "Auto-revert to last stable state."
+- Below the main chart: a secondary CUSUM statistic line (S_t) showing the cumulative sum of deviations, with the trigger threshold marked.
+
+The CUSUM statistic S_t is computed as:
+
+```
+S_t = max(0, S_{t-1} + (x_t - μ_0 - k))
+```
+
+Where:
+- `x_t` is the observed metric at iteration t
+- `μ_0` is the target (expected) metric value
+- `k` is the allowance parameter (slack for normal variation)
+- The trigger fires when `S_t > h` (the decision threshold)
+
+In this architecture, the CUSUM charts monitor the agent's loop metrics across iterations. If the agent's feature mutations cause an anomalous spike in model fit that defies statistical plausibility (the kind of sudden jump that almost always indicates the agent has inadvertently engineered target leakage rather than discovering genuine predictive signal) the CUSUM trigger fires.
+
+When the trigger fires, two things happen in sequence:
+
+1. The architecture executes a **mutation-trace** through the experiment-tracking ledger, identifying exactly which mutation caused the spike.
+2. The pipeline **automatically reverts** to the last known stable state.
+
+This creates a self-correcting loop. The agent can experiment freely, but the statistical monitoring system catches it when its experiments produce implausible results and rolls back the damage.
+
+[CODE BLOCK: CUSUM Monitor, Pseudocode]
+
+```python
+class CUSUMMonitor:
+    """Cumulative Sum control chart for detecting hallucinated optimization.
+    Based on Page, E. S. (1954). Continuous inspection schemes. Biometrika."""
+
+    def __init__(self, target_mean, allowance_k, threshold_h):
+        self.mu_0 = target_mean   # Expected baseline metric
+        self.k = allowance_k      # Allowance for normal variation
+        self.h = threshold_h      # Decision threshold
+        self.S_upper = 0.0        # Upper CUSUM statistic
+        self.S_lower = 0.0        # Lower CUSUM statistic
+
+    def update(self, observed_metric: float) -> bool:
+        """Returns True if CUSUM trigger fires (anomaly detected)."""
+        self.S_upper = max(0, self.S_upper + (observed_metric - self.mu_0 - self.k))
+        self.S_lower = max(0, self.S_lower - (observed_metric - self.mu_0 + self.k))
+
+        if self.S_upper > self.h or self.S_lower > self.h:
+            return True  # TRIGGER: anomalous shift detected
+        return False
+
+    def reset(self):
+        """Reset after revert to last stable state."""
+        self.S_upper = 0.0
+        self.S_lower = 0.0
+```
+
+---
+
+## Blocked-Restore Truth: The Epistemic Backbone
+
+Everything described so far (the harness, the budget, the CUSUM monitoring) keeps the agent from breaking things in real-time. But there is a deeper requirement: *traceability after the fact*.
+
+If the autonomous loop runs overnight and presents you with a research finding in the morning, you need to be able to verify exactly how that conclusion was reached. Not approximately. Exactly. Which dataset was used? Which features were engineered? In what order were mutations applied? What was the state of the pipeline at each checkpoint?
+
+The architecture enforces this through a principle called **Blocked-Restore Truth**. The mechanism works as follows:
+
+Every mutation the agent makes is written to two parallel ledgers:
+- A **cutover-audit** ledger (what changed, when, and why)
+- A **restore-source** ledger (what the state was *before* the change, so it can be reconstructed)
+
+When the autonomous loop terminates and presents its final research finding, the architecture performs a provenance verification. It walks backward through the ledger, looking for a pinned, authoritative source tree that traces all the way back to the original, unmodified dataset. If that provenance chain is complete and verified, the finding is accepted.
+
+If the provenance chain is incomplete (if there is a gap in the chain, a missing checkpoint, an undocumented mutation, or a source tree that cannot be tied to a specific authoritative revision) the system **blocks the restore**. It explicitly refuses to accept the finding. The result is discarded.
+
+[VISUALIZATION: Blocked-Restore Truth, Provenance Chain Verification]
+
+A horizontal flowchart showing the provenance verification process from right-to-left (backward walk):
+
+1. "Final Research Finding" (rightmost node, amber)
+2. → "Provenance Verifier" (central decision diamond)
+3. → Backward walk through linked nodes: "Mutation N" → "Mutation N-1" → ... → "Mutation 1" → "Original Dataset (Pinned Source Tree)"
+4. Each mutation node shows: mutation type, timestamp, cost, and links to both the cutover-audit entry and the restore-source snapshot.
+5. Two outcome paths from the Provenance Verifier:
+   - Green path: "Chain Complete → FINDING ACCEPTED"
+   - Red path: "Gap Detected → RESTORE BLOCKED → Finding Discarded"
+
+This is a deliberately conservative default. The architecture prefers to reject valid findings that have imperfect provenance over accepting invalid findings that happen to look good. It guarantees that undocumented "black-box" conclusions are systematically purged from the pipeline.
+
+This approach aligns with the growing consensus in ML reproducibility research. Recent work on end-to-end provenance for ML pipelines (Information Systems, 2025) demonstrates that without exact provenance traces (including specific commit hashes and data lineage) ML artifacts cannot be reliably reproduced. The Blocked-Restore Truth mechanism operationalizes this principle at the architectural level.
+
+[TABLE: Provenance Verification, Pass vs. Block Conditions]
+
+| Condition | Verdict | Action |
+|---|---|---|
+| Complete chain: every mutation traced to pinned source tree | PASS | Finding accepted into production pipeline |
+| Gap in mutation chain: undocumented step found | BLOCK | Finding discarded, pipeline reverts |
+| Missing checkpoint: restore-source snapshot absent | BLOCK | Finding discarded, pipeline reverts |
+| Source tree not pinned: no authoritative revision hash | BLOCK | Finding discarded, pipeline reverts |
+| Cutover-audit entry missing for any mutation | BLOCK | Finding discarded, pipeline reverts |
+
+---
+
+## The Application Boundary: Where the Machine Stops
+
+All of this architectural machinery (the Fixed Harness, the Mutation Budget, the CUSUM monitoring, the Blocked-Restore ledger) serves one ultimate philosophical purpose: **preserving human judgment authority**.
+
+The autonomous research agent is strictly an analytical engine. Its output is explicitly bounded to cohort-aggregate statistical supplements. This is a hard architectural constraint, not a policy preference. The agent is physically barred from:
+
+- Evaluating individual records
+- Emitting individual-level prescriptive decisions
+- Making recommendations about specific people, accounts, or entities
+
+The system generates the rigorous, exhaustively tested statistical evidence. But the final application of that research, the decision about what to *do* with the findings, remains exclusively the domain of the licensed human business partner.
+
+This is the Application Boundary. It is not just good governance. It reflects a specific philosophical position about the proper role of autonomous systems in regulated domains: the machine generates evidence; the human exercises judgment.
+
+[TABLE: Application Boundary, What the Agent Can and Cannot Do]
+
+| Capability | Agent Authority | Human Authority |
+|---|---|---|
+| Generate cohort-level statistical summaries | Yes | Reviews and validates |
+| Identify aggregate trends and patterns | Yes | Interprets business implications |
+| Evaluate individual customer records | No (blocked) | Exclusive authority |
+| Emit prescriptive decisions for individuals | No (blocked) | Exclusive authority |
+| Recommend actions for specific entities | No (blocked) | Exclusive authority |
+| Apply research findings to business decisions | No (blocked) | Exclusive authority |
+
+---
+
+## Try It Yourself: The Mutation Boundary Simulator
+
+The original case study includes an interactive simulator that lets you experience the Fixed Harness / Mutation Budget dichotomy firsthand. The simulator initializes an autonomous loop with a 100-unit mutation budget and presents three actions:
+
+- **Mutate Hyperparameters (Cost: 10)**: A valid sandbox action. Each click deducts 10 units from the budget, logs a successful mutation (e.g., adjusting Random Forest `n_estimators`), and updates the budget visualization bar.
+- **Mutate Feature Logic (Cost: 20)**: A valid but costlier sandbox action. Each click deducts 20 units, simulating a more complex feature engineering step.
+- **Disable PII Redaction Filter**: A Fixed Harness violation. Clicking this triggers an immediate SYSTEM HALT. The budget drops to zero, all action buttons are disabled, and a red alert message logs the violation. The loop is terminated.
+
+As the budget depletes, the visualization bar transitions from blue (healthy) to yellow (below 40 remaining) to red (below 20 remaining). When the budget reaches zero through normal mutation spending, the system logs a MUTATION BUDGET EXHAUSTED message and halts the loop, demonstrating the hard ceiling on exploratory freedom.
+
+This simulator makes the abstract dichotomy tangible: the sandbox buttons work until the budget runs out, but the harness-violation button kills the loop instantly regardless of remaining budget.
+
+[INTERACTIVE ELEMENT: Mutation Boundary Simulator, Implementation Notes]
+
+The simulator should be implemented as a self-contained HTML/JavaScript widget with the following components:
+
+1. **Control Panel (left column):**
+   - Two "valid action" buttons styled in a monospace, dark-theme terminal aesthetic
+   - One "danger action" button with red hover state
+   - A reset button to reinitialize the loop
+
+2. **Output Panel (right column):**
+   - A labeled progress bar showing "Remaining Mutation Budget: X / 100"
+   - The bar fill color transitions: blue (>= 40) → yellow (20-39) → red (< 20)
+   - A scrollable log box displaying timestamped entries in monospace font
+   - Log entries use color coding: default (gray), success (blue/sapphire), alert (red)
+
+3. **Behavior:**
+   - Valid mutations: deduct cost, log success message, update bar
+   - PII bypass: immediately set budget to 0, disable all buttons, log SYSTEM HALT in red
+   - Budget exhaustion: disable mutation buttons, log BUDGET EXHAUSTED in red
+   - Reset: restore budget to 100, re-enable all buttons, clear log, reinitialize messages
+
+---
+
+## What This Pattern Teaches Us
+
+If you are building systems that grant LLM agents autonomous action (whether in ML research, code generation, or any other domain) the Fixed Harness / Mutation Budget pattern offers three transferable principles:
+
+**Principle 1: Partition the state space.** Do not try to make the agent "careful." Instead, make it structurally impossible for the agent to alter what it should not. The harness/budget divide creates a clean separation between immutable constraints and exploratory freedom.
+
+**Principle 2: Monitor the metrics, not just the actions.** Budget limits prevent infinite loops, but they do not prevent the agent from fooling itself within its budget. Statistical monitoring (like CUSUM) catches hallucinated optimization that looks valid by any single-point measure but violates statistical plausibility when viewed across the full trajectory.
+
+**Principle 3: Default to blocked-restore.** When provenance cannot be verified, reject the finding. It is tempting to accept results that "look close enough," but this is exactly how undocumented black-box conclusions enter production pipelines. The conservative default (block the restore) is more expensive in the short term but dramatically safer over time.
+
+---
+
+## References
+
+Data Science Dojo. (2026, March 13). Karpathy Autoresearch Explained: 100 Experiments Overnight. https://datasciencedojo.com/blog/karpathy-autoresearch-explained/
+
+European Union. (2024). *Regulation (EU) 2024/1689 laying down harmonised rules on artificial intelligence (Artificial Intelligence Act)*. Official Journal of the European Union. https://eur-lex.europa.eu/eli/reg/2024/1689/oj
+
+Hutter, F., Kotthoff, L., & Vanschoren, J. (Eds.). (2019). *Automated machine learning: Methods, systems, challenges*. Springer. https://doi.org/10.1007/978-3-030-05318-5
+
+Information Systems. (2025). Capturing end-to-end provenance for machine learning pipelines. *Information Systems*, 132, 102495. https://doi.org/10.1016/j.is.2024.102495
+
+Karpathy, A. (2026). *karpathy/autoresearch*. GitHub. https://github.com/karpathy/autoresearch
+
+Lu, C., Lu, C., Lange, R. T., Foerster, J., Clune, J., & Ha, D. (2024). The AI Scientist: Towards fully automated open-ended scientific discovery. *arXiv preprint*, arXiv:2408.06292. https://arxiv.org/abs/2408.06292
+
+National Institute of Standards and Technology. (2023). *Artificial Intelligence Risk Management Framework (AI RMF 1.0)*. NIST AI 100-1. https://doi.org/10.6028/NIST.AI.100-1
+
+Page, E. S. (1954). Continuous inspection schemes. *Biometrika*, 41(1/2), 100–115. https://doi.org/10.2307/2333009

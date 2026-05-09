@@ -1,0 +1,110 @@
+# SCIENTIFIC SUMMARY: AUTONOMOUS RESEARCH & MUTATION BOUNDARIES
+**Document Type:** Scientific Conference Poster / LLM Knowledge Synthesis
+**Subject:** Architectural Patterns for Bounding Autonomous LLM Research Agents in Regulated Environments
+**Date of Synthesis:** 2026-05-08
+
+---
+
+## 1. ABSTRACT
+
+This case study presents a formal architectural pattern for deploying autonomous LLM-driven research loops within highly regulated enterprise environments. The core contribution is the **Fixed Harness / Mutation Budget dichotomy** — a state-space partition that grants an autonomous agent unconstrained exploratory freedom within a mathematically bounded sandbox while enforcing immutable enterprise compliance gates that the agent cannot circumvent. The architecture is further hardened by three complementary mechanisms: (1) CUSUM-based statistical divergence monitoring to detect hallucinated optimization, (2) a Blocked-Restore Truth ledger enforcing end-to-end epistemic provenance, and (3) a hard Application Boundary that restricts agent output to cohort-aggregate statistical supplements, preserving human judgment authority over individual-level decisions. The pattern extends the Karpathy `autoresearch` paradigm (Karpathy, 2026) and foundational AutoML architectures (Hutter et al., 2019) into the enterprise governance domain.
+
+---
+
+## 2. BACKGROUND: THE AUTONOMOUS RESEARCH PARADIGM
+
+### 2.1 The Traditional ML Loop
+The conventional applied machine learning workflow is human-driven: a data scientist designs an experiment, engineers features, tunes hyperparameters, evaluates the fit, and iteratively repeats. Each cycle requires human judgment to select the next hypothesis and interpret results.
+
+### 2.2 The Karpathy Autoresearch Pattern
+In March 2026, Andrej Karpathy released `karpathy/autoresearch`, a ~630-line Python framework that automates this cycle (Karpathy, 2026; Data Science Dojo, 2026). The pattern operates as follows:
+
+1. A human defines research goals and constraints in a plain-text `program.md` file.
+2. An AI agent reads the constraints, analyzes the current `train.py` script, and proposes code edits.
+3. The system launches a fixed-duration training run (typically 5 minutes) on a single GPU.
+4. If the experiment improves a chosen scalar metric (e.g., validation loss), the change is committed via Git; otherwise, it is reverted.
+
+This represents a fundamental shift: the human role moves from writing and tuning code to defining constraints and interpreting results — what Karpathy terms "agentic engineering."
+
+### 2.3 The Broader Autonomous Discovery Landscape
+The autoresearch pattern belongs to a growing paradigm of end-to-end autonomous scientific discovery. Lu et al. (2024) demonstrated "The AI Scientist," a system handling literature review, hypothesis generation, experimental execution, and paper writing without human intervention. By mid-2026, similar systems (e.g., Sakana AI's derivatives) were appearing across the ML research community, accelerating the shift from human-in-the-loop to fully autonomous pipelines.
+
+### 2.4 The Enterprise Problem
+Deploying such autonomous loops in regulated enterprise environments introduces a critical risk: granting an LLM unconstrained mutation power over a research pipeline guarantees loop divergence and catastrophic provenance loss. Enterprise environments enforce PII protection, role-based access controls, fairness requirements, and audit trails — all of which an unconstrained autonomous agent could inadvertently or deliberately bypass in pursuit of better model fit. The architecture presented here addresses this exact problem.
+
+---
+
+## 3. THE ARCHITECTURAL PATTERN
+
+### 3.1 The Fixed Harness / Mutation Budget Dichotomy
+The architecture enforces a strict physical dichotomy over the autonomous loop's state space, partitioning it into two mutually exclusive regimes:
+
+**Fixed Harness (Immutable):** The enterprise compliance layer. The agent is mathematically barred from altering these parameters. The harness enforces three gate types — pre-loop, mid-loop, and post-loop — that the agent cannot circumvent:
+- **Enterprise Data Governance:** Forces PII redaction and data classification before any agent access.
+- **Role-Based Access Control (RBAC):** Restricts the agent to cohort-aggregate data only, physically blocking individual-level retrieval.
+- **Responsible AI Fairness Gates:** Enforces bias and fairness constraints on model outputs.
+
+If the agent attempts to bypass any harness gate (e.g., disabling the PII scrubber to gain more predictive signal), the Fixed Harness immediately terminates execution.
+
+**Mutation Budget (Bounded):** The designated sandbox where the agent has exploratory freedom. The budget spans four mutation domains:
+1. Hypothesis generation
+2. Feature engineering
+3. Model architecture and hyperparameters
+4. Evaluation metrics
+
+Every mutation the agent executes deducts a cost from its finite budget. When the budget is exhausted, the loop forcefully terminates, preventing infinite hallucinated optimization spirals.
+
+### 3.2 Divergence Monitoring via CUSUM
+Even within a bounded budget, an LLM can drift into hallucinated reasoning — optimizing for metrics that hold no real-world validity. To detect this, the architecture implements Cumulative Sum (CUSUM) control charts on loop metrics, following Page (1954).
+
+CUSUM charts accumulate deviations from a target value over time, providing greater sensitivity to small, persistent shifts than traditional Shewhart charts. In this architecture, if the agent's feature mutations cause an anomalous spike in model fit that defies statistical plausibility (indicating the agent has engineered a data leak rather than discovering true signal), the CUSUM trigger fires. The system then executes a mutation-trace through the experiment-tracking ledger and automatically reverts the pipeline to the last stable state.
+
+### 3.3 Blocked-Restore Truth (Epistemic Provenance)
+The architecture enforces end-to-end traceability through a principle called "Blocked-Restore Truth." Every mutation the agent makes is written to a cutover-audit and restore-source ledger. When the autonomous loop presents a final research finding, the architecture verifies that a pinned, authoritative source tree traces back to the original unmodified dataset in the ledger. If this provenance chain cannot be established, the system blocks the restore — it explicitly refuses to accept the finding.
+
+This design aligns with modern ML reproducibility standards. As documented in recent literature on ML pipeline provenance (Information Systems, 2025), without exact end-to-end provenance traces including specific commit hashes and data lineage, ML artifacts cannot be reliably reproduced. The Blocked-Restore Truth mechanism ensures that undocumented "black-box" conclusions are systematically purged from the pipeline.
+
+### 3.4 The Application Boundary (Human Mandate)
+The architectural rigor of the Fixed Harness and Blocked-Restore ledger serves a specific philosophical purpose: preserving human judgment authority. The autonomous researcher is strictly an analytical engine. Its output is explicitly bounded to cohort-aggregate statistical supplements. It is physically barred from evaluating individual records or emitting individual-level prescriptive decisions. The system generates rigorously tested statistical evidence, but the final application of that research remains exclusively the domain of the licensed human business partner.
+
+This reflects the broader enterprise AI governance trend toward "compliance-by-design" and the principle of constraining "excessive agency" — rigorously limiting the permissions granted to autonomous agents to prevent catastrophic failures or unintended data exposure (NIST AI RMF; EU AI Act, 2025).
+
+---
+
+## 4. IMPLEMENTATION EVIDENCE
+
+The source corpus includes an interactive Mutation Boundary Simulator demonstrating the dichotomy in practice. The simulator provides:
+- **Valid mutation actions:** Hyperparameter mutation (cost 10) and feature logic mutation (cost 20), each deducting from a 100-unit budget.
+- **Harness violation demonstration:** A "Disable PII Redaction Filter" button that triggers immediate Fixed Harness termination with a SYSTEM HALT message.
+- **Budget exhaustion visualization:** The budget bar transitions from blue (healthy) to yellow (<40 remaining) to red (<20 remaining), culminating in forced loop termination.
+
+Additionally, the project's own governance history serves as a lived example of the Blocked-Restore Truth principle. When the project could not establish a pinned authoritative source tree for its own repository, it enforced the blocked-restore default — intentionally keeping the repository absent rather than reconstructing from unverified residue. This demonstrates the epistemic rigor the architecture demands.
+
+---
+
+## 5. RELATED METHODOLOGIES
+
+The architecture connects to three documented method surfaces:
+1. **Autoresearch Autonomous Loop:** The general operational pattern for LLM-driven research iteration.
+2. **Autoresearch Fixed Harness Boundaries:** The specific constraint and interface definitions for the immutable enterprise layer.
+3. **Autoresearch Atlas Fit:** The organizational architecture analysis evaluating how the autonomous loop pattern integrates with existing enterprise systems.
+
+---
+
+## 6. REFERENCES
+
+Hutter, F., Kotthoff, L., & Vanschoren, J. (Eds.). (2019). *Automated machine learning: Methods, systems, challenges*. Springer. https://doi.org/10.1007/978-3-030-05318-5
+
+Information Systems. (2025). Capturing end-to-end provenance for machine learning pipelines. *Information Systems*, 132, 102495. https://doi.org/10.1016/j.is.2024.102495
+
+Karpathy, A. (2026). *karpathy/autoresearch: AI agents running research on single-GPU nanochat training automatically*. GitHub. https://github.com/karpathy/autoresearch
+
+Lu, C., Lu, C., Lange, R. T., Foerster, J., Clune, J., & Ha, D. (2024). The AI Scientist: Towards fully automated open-ended scientific discovery. *arXiv preprint*, arXiv:2408.06292. https://arxiv.org/abs/2408.06292
+
+National Institute of Standards and Technology. (2023). *Artificial Intelligence Risk Management Framework (AI RMF 1.0)*. NIST AI 100-1. https://doi.org/10.6028/NIST.AI.100-1
+
+Page, E. S. (1954). Continuous inspection schemes. *Biometrika*, 41(1/2), 100–115. https://doi.org/10.2307/2333009
+
+Data Science Dojo. (2026, March 13). Karpathy Autoresearch Explained: 100 Experiments Overnight. https://datasciencedojo.com/blog/karpathy-autoresearch-explained/
+
+European Union. (2024). *Regulation (EU) 2024/1689 of the European Parliament and of the Council laying down harmonised rules on artificial intelligence (Artificial Intelligence Act)*. Official Journal of the European Union. https://eur-lex.europa.eu/eli/reg/2024/1689/oj

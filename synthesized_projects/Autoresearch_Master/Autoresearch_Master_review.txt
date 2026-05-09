@@ -1,0 +1,132 @@
+# AUTORESEARCH MASTER - SECTION REVIEW (STAGE 2)
+# Analyst Persona: Expert analyst performing chunked, citation-heavy review
+# Source: Autoresearch_Master_synthesis_source.txt (read from disk)
+
+================================================================================
+CHUNK 1 REVIEW: Core Architecture & Paradigm (Source Lines 9-54)
+================================================================================
+
+## 1.1 The Autonomous Analytical Loop
+- **Paradigm Shift Identified:** The source describes a transition from the traditional human-driven hypothesis-testing cycle (design experiment -> engineer features -> tune hyperparameters -> evaluate -> repeat) to an LLM-delegated autonomous loop. [Source: Section 01, Lines 16-19]
+- **Theoretical Foundation:** The pattern extends Automated Machine Learning (AutoML) architectures, citing Hutter et al. (2019). The LLM operates on a graph-based workflow: formulate hypothesis -> execute code -> evaluate results -> decide continue/terminate. [Source: Section 01, Line 18]
+- **Core Risk Identified:** Granting an LLM "unconstrained mutation power" in a regulated enterprise environment "guarantees loop divergence and catastrophic provenance loss." The architecture must "formally leash the agent." [Source: Section 01, Line 19]
+
+## 1.2 The Structural Divide (Fixed Harness vs. Mutation Budget)
+- **Binary Dichotomy:** The architecture enforces a "strict physical dichotomy" splitting the loop's state space into two mutually exclusive regimes. [Source: Section 02, Lines 21-23]
+  - **Fixed Harness:** Immutable enterprise constraints. Agent is "mathematically barred" from altering these.
+  - **Mutation Budget:** Designated sandbox with finite computational allowance.
+- **Key Design Principle:** The agent has freedom *only within* the mutation budget; it can never touch the harness.
+
+## 1.3 Fixed Harness Components
+- **Three Gate Types:** Pre-loop, mid-loop, and post-loop gates. [Source: Section 03, Lines 25-27]
+- **Specific Gates Enumerated:**
+  1. Enterprise Data Governance layer (forces PII redaction and classification)
+  2. Role-Based Access Control (RBAC) layer (restricts agent to cohort-aggregate data, blocks individual-level retrieval)
+  3. Responsible AI fairness gates
+- **Enforcement Mechanism:** If the agent attempts to bypass the aggregate filter or disable the PII scrubber, "the Fixed Harness immediately terminates the execution." [Source: Section 03, Line 27]
+
+## 1.4 Mutation Budget Mechanics
+- **Four Mutation Domains:** hypothesis generation, feature engineering, model architecture/hyperparameters, evaluation metrics. [Source: Section 04, Line 30]
+- **Cost-Deduction Model:** Every alteration deducts from the budget. Budget exhaustion triggers forced termination, preventing "infinite, hallucinated optimization spiral." [Source: Section 04, Line 31]
+- **Interactive Simulator:** The case study includes a live simulator demonstrating:
+  - Hyperparameter mutation (cost 10)
+  - Feature logic mutation (cost 20)
+  - PII bypass attempt (triggers immediate harness violation)
+  - Budget visualization: bar turns yellow <40, red <20 [Source: Lines 33-38]
+
+## 1.5 Divergence Monitoring (CUSUM)
+- **Problem Addressed:** Even with bounded budget, LLM can "drift into hallucinated reasoning, optimizing for metrics that hold no real-world validity." [Source: Section 05, Lines 40-42]
+- **Solution:** Cumulative Sum (CUSUM) control charts on loop metrics, citing Page (1954). [Source: Section 05, Line 42]
+- **Trigger Condition:** Anomalous spike in model fit that "defies statistical plausibility" indicates agent engineered a data-leak rather than true signal.
+- **Response Mechanism:** CUSUM trigger trips -> mutation-trace via experiment-tracking ledger -> automatic revert to last stable state.
+
+## 1.6 Blocked-Restore Truth (Epistemic Provenance)
+- **Core Principle:** Every mutation is written to a cutover-audit and restore-source ledger. [Source: Section 06, Lines 44-46]
+- **Enforcement:** If the architecture "cannot find a pinned, authoritative source tree tracing back to the original unmodified dataset," the system "blocks the restore" and "explicitly refuses to accept the finding."
+- **Design Intent:** Guarantees "undocumented 'black-box' conclusions are systematically purged from the pipeline."
+
+## 1.7 The Application Boundary (Human Mandate)
+- **Philosophical Purpose:** Preserving human judgment authority. [Source: Section 07, Lines 48-50]
+- **Scope Limitation:** Agent output is bounded to "cohort-aggregate statistical supplements." It is "physically barred from evaluating individual records or emitting individual-level prescriptive decisions."
+- **Division of Labor:** System generates exhaustively tested statistical evidence; the "licensed human business partner" makes all final application decisions.
+
+================================================================================
+CHUNK 2 REVIEW: Project Governance & Provenance (Source Lines 56-141)
+================================================================================
+
+## 2.1 Project Lifecycle Status
+- **Current Classification:** "Reference lane" - explicitly NOT an active execution surface. [Source: Lines 60-67, 96-109]
+- **Cutover Date:** 2026-04-14 UTC. Project transitioned to "wiki-first" model. [Source: Line 62]
+- **Blocked-Restore State:** The exact retained repository is intentionally absent. Local git history could not prove the target retained path or pre-migration root repo tree. The official upstream repo could not be tied to one exact intended workspace revision. [Source: Lines 67]
+
+## 2.2 Cutover Deliverables
+Seven specific outputs from the wiki-first cutover: [Source: Lines 69-76]
+1. Live-surface audit (internal/resources/autoresearch_master_cutover_audit.{md,json})
+2. Restore-source ledger (AUTORESEARCH_RESTORE_SOURCES.{md,json})
+3. Blocked-restore truth record (AUTORESEARCH_REFERENCE_PROVENANCE.{md,json})
+4. Knowledge library harvest to .claude/wiki/raw/
+5. Shared wiki pages for orientation, method behavior, Atlas-fit
+6. Deletion of superseded local router and synthesis surfaces
+7. Updated replatform trackers
+
+## 2.3 Authority Hierarchy
+Strict governance hierarchy established: [Source: Lines 188-192]
+1. Primary Authority (Current State): UPDATE.txt
+2. Durable Ownership: HANDOFF.md
+3. Runtime/Operator Truth: AUTORESEARCH_REFERENCE_PROVENANCE.md
+4. Shared Synthesis: .claude/wiki/wiki/projects/autoresearch-master.md
+- **Recency Rule:** Prefer newest owner-maintained surfaces over cutover packets or harvested residue when conflicts exist. [Source: Line 226]
+
+## 2.4 Three Gates for Resumption
+Work on repository restoration is strictly gated behind ALL THREE: [Source: Lines 82-85, 194-197]
+1. A specific, verifiable authoritative source
+2. A pinned intended revision (exact commit hash)
+3. A verifiable full-tree proof (cryptographic verification of entire pre-migration directory structure)
+
+## 2.5 Prohibited Actions
+Three explicit prohibitions: [Source: Lines 87-90]
+1. Do not reconstruct from harvested markdown
+2. Do not select "close enough" upstream commits
+3. Do not treat as active ML runtime or publication surface
+
+================================================================================
+CHUNK 3 REVIEW: External Context & Karpathy Pattern (Source Lines 142-237)
+================================================================================
+
+## 3.1 The Karpathy Pattern (External Context)
+- **Origin:** In March 2026, Andrej Karpathy released karpathy/autoresearch - an open-source tool automating the ML research cycle. [Source: Lines 178-180, Reference [1]]
+- **Mechanism:** AI agent autonomously edits training code (e.g., train.py), runs fixed-time experiments (e.g., 5-minute) on single GPU, evaluates strict scalar metric (e.g., validation loss). Successful changes committed via Git; failures reverted.
+- **Human Role Shift:** From writing code to writing constraints in plain-text program.md file. [Source: Reference [4]]
+- **Broader Context:** Part of paradigm shift toward end-to-end autonomous discovery. Lu et al. (2024) "The AI Scientist" demonstrates industry shift from human-in-the-loop ML to fully automated hypothesis generation. [Source: Reference [2]]
+
+## 3.2 Reproducibility and Provenance Justification
+- **ML Reproducibility Crisis:** The blocked-restore posture is justified by modern ML reproducibility standards. Without exact end-to-end provenance traces (specific Git commit hashes, data lineage), ML pipelines cannot be trusted or reliably reproduced. [Source: Lines 185-186, Reference [3]]
+- **Academic Backing:** Information Systems (2025) paper on capturing end-to-end provenance for ML pipelines validates the "full-tree proof" and "pinned authoritative revision" requirements. [Source: Reference [3]]
+
+## 3.3 Atlas Fit Analysis
+- **Purpose:** The project's analytical mission was to evaluate how the Karpathy autonomous loop pattern fits into the organization's broader architecture ("Atlas fit analysis"). [Source: Lines 120, 137, 162]
+- **Related Methodologies:** Three related wiki pages document:
+  1. Autoresearch Autonomous Loop (general operational pattern)
+  2. Autoresearch Fixed Harness Boundaries (constraints/interfaces)
+  3. Autoresearch Atlas Fit (organizational fit analysis)
+  [Source: Lines 228-232]
+
+## 3.4 Prior Review Consensus
+All four prior review sections converge on identical conclusions: [Source: Lines 146-169]
+- Project is dormant/blocked, not active
+- Authority shifted from code to provenance documentation
+- Three gates must be satisfied for any resumption
+- Recency rule governs which documents take precedence
+- No reconstruction from residue is permitted
+
+================================================================================
+ANALYST SUMMARY
+================================================================================
+
+The Autoresearch Master source corpus presents TWO interleaved narratives:
+
+**Narrative A (Technical Architecture):** A rigorous architectural pattern for bounding autonomous LLM research agents in regulated enterprise environments. The pattern introduces a formal dichotomy (Fixed Harness vs. Mutation Budget), statistical divergence detection (CUSUM), epistemic provenance enforcement (Blocked-Restore Truth), and a hard application boundary preserving human judgment authority. This is the publishable, pedagogically valuable content.
+
+**Narrative B (Project Governance):** The internal project-management state of the autoresearch-master workspace lane, including its cutover to a wiki-first model, its blocked-restore status, authority hierarchies, and three-gate resumption criteria. This is internal operational context that contextualizes but does not constitute the primary intellectual contribution.
+
+The article should focus on Narrative A (the architectural pattern) while using Narrative B to ground the "Blocked-Restore Truth" concept with a concrete, lived example of how provenance enforcement works in practice.
