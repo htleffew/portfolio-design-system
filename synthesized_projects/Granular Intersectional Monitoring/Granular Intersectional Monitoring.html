@@ -1,0 +1,2909 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Granular Intersectional Monitoring | Obsidian-Chrome case study
+    </title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --obsidian: #030303;
+        --charcoal: #161616;
+        --graphite: #222222;
+        --brushed: #333333;
+        --tungsten: #a1a1a6;
+        --platinum: #f5f5f7;
+        --flare: #ffffff;
+        --paper: #f5f5f7;
+        --paper-2: #e9e9e9;
+        --paper-3: #dddddd;
+        --ink: #030303;
+        --ink-2: #222222;
+        --ink-3: #5e5e5a;
+        --sapphire-deep: #0f52ba;
+        --sapphire: #4d8cff;
+        --ink-blue: #1a3a6b;
+        --phthalo: #0f3a6b;
+        --phthalo-lift: #3866a0;
+        --alizarin: #7a1626;
+        --hookers: #1a4a38;
+        --hansa: #dba844;
+        --dioxazine: #3d1f4a;
+        --display: "Playfair Display", "Times New Roman", serif;
+        --body: "Lora", Georgia, serif;
+        --mono: "JetBrains Mono", "SF Mono", Menlo, monospace;
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        --ease-std: cubic-bezier(0.4, 0, 0.2, 1);
+        --col: 680px;
+        --col-wide: 1160px;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        border-radius: 0 !important;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: var(--body);
+        background: var(--obsidian);
+        color: var(--platinum);
+        font-size: 18px;
+        line-height: 1.78;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+      ::selection {
+        background: rgba(77, 140, 255, 0.35);
+        color: #fff;
+      }
+      a {
+        color: inherit;
+      }
+      .atmosphere {
+        position: fixed;
+        inset: 0;
+        z-index: -30;
+        pointer-events: none;
+        background:
+          radial-gradient(
+            circle at 80% 24%,
+            rgba(77, 140, 255, 0.13),
+            transparent 34%
+          ),
+          radial-gradient(
+            circle at 18% 75%,
+            rgba(15, 82, 186, 0.08),
+            transparent 28%
+          ),
+          linear-gradient(180deg, #050505 0%, #030303 100%);
+        transition: opacity 0.7s var(--ease-std);
+      }
+      .band {
+        position: relative;
+        padding: 140px 0;
+        transition:
+          background 0.9s var(--ease-std),
+          color 0.9s var(--ease-std);
+      }
+      .band--dark,
+      .band--ink {
+        background: var(--obsidian);
+        color: var(--platinum);
+      }
+      .band--paper {
+        background: var(--paper);
+        color: var(--ink);
+      }
+      .col {
+        max-width: var(--col);
+        margin: 0 auto;
+        padding: 0 32px;
+      }
+      .col-wide {
+        max-width: var(--col-wide);
+        margin: 0 auto;
+        padding: 0 48px;
+      }
+      #progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        z-index: 200;
+        pointer-events: none;
+      }
+      #progress::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: var(--p, 0%);
+        background: linear-gradient(
+          90deg,
+          var(--sapphire) 0%,
+          var(--sapphire-deep) 100%
+        );
+        transition: width 0.05s linear;
+      }
+      #topnav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 32px;
+        z-index: 150;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--platinum);
+        background: rgba(3, 3, 3, 0.55);
+        backdrop-filter: blur(14px) saturate(140%);
+        -webkit-backdrop-filter: blur(14px) saturate(140%);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        transition:
+          background 0.6s var(--ease-std),
+          color 0.6s var(--ease-std),
+          border-color 0.6s var(--ease-std);
+      }
+      #topnav.is-paper {
+        background: rgba(245, 245, 247, 0.84);
+        border-bottom-color: rgba(0, 0, 0, 0.08);
+        color: var(--ink);
+      }
+      #topnav .brand {
+        font-family: var(--display);
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: none;
+        text-decoration: none;
+      }
+      #topnav .crumbs {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      #topnav .crumbs a {
+        text-decoration: none;
+        opacity: 0.74;
+      }
+      #topnav .crumbs a:hover {
+        opacity: 1;
+      }
+      #topnav .sep {
+        opacity: 0.35;
+      }
+      #spine {
+        position: fixed;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 130;
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 18px 14px;
+        background: rgba(3, 3, 3, 0.45);
+        color: var(--platinum);
+        backdrop-filter: blur(14px) saturate(140%);
+        -webkit-backdrop-filter: blur(14px) saturate(140%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition:
+          background 0.6s var(--ease-std),
+          border-color 0.6s var(--ease-std),
+          color 0.6s var(--ease-std);
+      }
+      #spine.is-paper {
+        background: rgba(245, 245, 247, 0.8);
+        border-color: rgba(0, 0, 0, 0.1);
+        color: var(--ink);
+      }
+      #spine .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+      }
+      #spine .tick {
+        width: 16px;
+        height: 1px;
+        background: currentColor;
+        opacity: 0.35;
+        transition:
+          width 0.35s var(--ease-out),
+          opacity 0.35s var(--ease-out),
+          background 0.35s var(--ease-out);
+      }
+      #spine .row.is-active .tick {
+        width: 28px;
+        opacity: 1;
+        background: var(--sapphire);
+      }
+      #spine .row.is-paper-active .tick {
+        background: var(--ink-blue);
+      }
+      #spine .label {
+        font-family: var(--mono);
+        font-size: 9.5px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        opacity: 0.58;
+        white-space: nowrap;
+        transition: opacity 0.35s var(--ease-out);
+      }
+      #spine .row:hover .label,
+      #spine .row.is-active .label {
+        opacity: 1;
+      }
+      #spine .num {
+        font-family: var(--mono);
+        font-size: 9px;
+        opacity: 0.4;
+        width: 14px;
+      }
+      #status {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 130;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--platinum);
+        padding: 10px 14px;
+        background: rgba(3, 3, 3, 0.45);
+        backdrop-filter: blur(14px) saturate(140%);
+        -webkit-backdrop-filter: blur(14px) saturate(140%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        transition:
+          background 0.6s var(--ease-std),
+          border-color 0.6s var(--ease-std),
+          color 0.6s var(--ease-std);
+      }
+      #status.is-paper {
+        background: rgba(245, 245, 247, 0.78);
+        border-color: rgba(0, 0, 0, 0.1);
+        color: var(--ink);
+      }
+      #status .dot {
+        width: 5px;
+        height: 5px;
+        background: var(--sapphire);
+        display: inline-block;
+      }
+      #status .pct {
+        color: var(--sapphire);
+        font-weight: 500;
+      }
+      #status.is-paper .dot,
+      #status.is-paper .pct {
+        background: var(--ink-blue);
+        color: var(--ink-blue);
+      }
+      .front {
+        min-height: 100vh;
+        padding: 160px 0 110px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .front .col-wide {
+        position: relative;
+        z-index: 2;
+      }
+      .front .meta-row {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--tungsten);
+        margin-bottom: 40px;
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .front .meta-row .sep {
+        opacity: 0.4;
+      }
+      .front h1 {
+        font-family: var(--display);
+        font-weight: 600;
+        font-size: clamp(34px, 4.4vw, 60px);
+        letter-spacing: -0.02em;
+        line-height: 1.06;
+        color: var(--flare);
+        margin-bottom: 30px;
+        max-width: 14ch;
+      }
+      .front .abstract {
+        font-family: var(--body);
+        font-style: italic;
+        font-size: 20px;
+        line-height: 1.62;
+        color: var(--platinum);
+        max-width: 58ch;
+        margin-bottom: 40px;
+      }
+      .front .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 40px;
+      }
+      .front .byline {
+        display: flex;
+        gap: 34px;
+        flex-wrap: wrap;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--tungsten);
+      }
+      .front .byline strong {
+        display: block;
+        margin-top: 6px;
+        font-family: var(--body);
+        font-style: italic;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: none;
+        color: var(--platinum);
+      }
+      .front .citation {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.1em;
+        color: var(--tungsten);
+        border-top: 1px solid rgba(255, 255, 255, 0.18);
+        padding-top: 24px;
+        line-height: 1.85;
+      }
+      .front .citation b {
+        color: var(--platinum);
+        font-weight: 500;
+      }
+      .ambient {
+        position: absolute;
+        right: -12%;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 64%;
+        max-width: 820px;
+        aspect-ratio: 1;
+        pointer-events: none;
+        z-index: 1;
+        opacity: 0;
+        animation: ambient-fade 1.6s 0.6s var(--ease-out) forwards;
+      }
+      @keyframes ambient-fade {
+        to {
+          opacity: 0.32;
+        }
+      }
+      .ambient svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        margin: 0 auto 18px;
+        max-width: var(--col);
+        padding: 0 32px;
+      }
+      .band--paper .eyebrow {
+        color: var(--ink-blue);
+      }
+      .band--dark .eyebrow,
+      .band--ink .eyebrow {
+        color: var(--sapphire);
+      }
+      h2 {
+        font-family: var(--display);
+        font-weight: 600;
+        letter-spacing: -0.012em;
+        line-height: 1.12;
+        margin: 0 auto 28px;
+        padding: 0 32px;
+      }
+      .band--paper h2 {
+        font-size: clamp(24px, 2.6vw, 34px);
+        color: var(--ink);
+        max-width: var(--col);
+      }
+      .band--dark h2,
+      .band--ink h2 {
+        font-size: clamp(26px, 2.8vw, 36px);
+        color: var(--flare);
+        max-width: var(--col);
+      }
+      h3 {
+        font-family: var(--display);
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        margin: 34px auto 18px;
+        padding: 0 32px;
+        max-width: var(--col);
+      }
+      .band--paper h3 {
+        font-size: 24px;
+        color: var(--ink);
+      }
+      .band--dark h3,
+      .band--ink h3 {
+        font-size: 24px;
+        color: var(--flare);
+      }
+      h4 {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        margin: 28px auto 14px;
+        padding: 0 32px;
+        max-width: var(--col);
+      }
+      .band--paper h4 {
+        color: var(--ink-blue);
+      }
+      .band--dark h4,
+      .band--ink h4 {
+        color: var(--sapphire);
+      }
+      p,
+      .band--paper li,
+      .band--dark li,
+      .band--ink li {
+        margin: 0 auto 22px;
+        max-width: var(--col);
+        padding: 0 32px;
+        font-size: 17px;
+        line-height: 1.78;
+      }
+      .band--paper p {
+        color: var(--ink);
+      }
+      .band--dark p,
+      .band--ink p {
+        color: var(--platinum);
+      }
+      .lede {
+        font-family: var(--body);
+        font-style: italic;
+        font-size: 21px;
+        line-height: 1.6;
+        margin: 0 auto 36px;
+        max-width: var(--col);
+        padding: 0 32px;
+      }
+      .band--paper .lede {
+        color: var(--ink-2);
+      }
+      .band--dark .lede,
+      .band--ink .lede {
+        color: var(--platinum);
+      }
+      ul.bullets,
+      ol.steps {
+        max-width: var(--col);
+        margin: 0 auto 22px;
+        padding: 0 32px 0 54px;
+      }
+      ul.bullets li,
+      ol.steps li {
+        margin: 0 0 12px 0;
+        padding: 0;
+        max-width: none;
+      }
+      ul.bullets li::marker,
+      ol.steps li::marker {
+        color: var(--ink-blue);
+        font-family: var(--mono);
+      }
+      .band--dark ul.bullets li::marker,
+      .band--ink ul.bullets li::marker,
+      .band--dark ol.steps li::marker,
+      .band--ink ol.steps li::marker {
+        color: var(--sapphire);
+      }
+      .pullquote {
+        font-family: var(--display);
+        font-style: italic;
+        font-weight: 500;
+        font-size: clamp(26px, 2.7vw, 38px);
+        line-height: 1.22;
+        color: var(--flare);
+        max-width: 19ch;
+        margin: 0 auto;
+        letter-spacing: -0.005em;
+        text-align: center;
+        padding: 0 32px;
+      }
+      .pullquote::before {
+        content: "“";
+        display: block;
+        font-style: normal;
+        font-size: 1.6em;
+        line-height: 0;
+        color: var(--sapphire);
+        margin-bottom: 14px;
+      }
+      .pullquote .qa {
+        display: block;
+        margin-top: 30px;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-style: normal;
+        font-weight: 400;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--tungsten);
+      }
+      .figure {
+        margin: 48px auto;
+        max-width: var(--col-wide);
+        padding: 0 32px;
+      }
+      .figure .frame {
+        position: relative;
+        background: #fff;
+        border: 1px solid var(--paper-3);
+        padding: 30px 34px 28px;
+        transition: filter 0.35s var(--ease-std);
+      }
+      .band--dark .figure .frame,
+      .band--ink .figure .frame {
+        background: #0a0a0a;
+        border-color: var(--graphite);
+      }
+      .figure .frame:hover {
+        filter: brightness(1.02);
+      }
+      .figure .cap {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        margin-top: 14px;
+        max-width: 70ch;
+      }
+      .band--dark .figure .cap,
+      .band--ink .figure .cap {
+        color: var(--tungsten);
+      }
+      .figure .cap .num {
+        color: var(--ink-blue);
+        margin-right: 10px;
+      }
+      .band--dark .figure .cap .num,
+      .band--ink .figure .cap .num {
+        color: var(--sapphire);
+      }
+      .figure-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 22px;
+      }
+      .viz-title {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+      }
+      .band--paper .viz-title {
+        color: var(--ink-blue);
+      }
+      .band--dark .viz-title,
+      .band--ink .viz-title {
+        color: var(--sapphire);
+      }
+      .viz-shell {
+        border: 1px solid var(--paper-3);
+        background: linear-gradient(180deg, #fff 0%, #f3f3f3 100%);
+        padding: 18px;
+      }
+      .band--dark .viz-shell,
+      .band--ink .viz-shell {
+        border-color: var(--graphite);
+        background: linear-gradient(180deg, #101010 0%, #0a0a0a 100%);
+      }
+      .figure svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .toggle-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      .toggle-group {
+        display: inline-flex;
+        border: 1px solid var(--paper-3);
+      }
+      .band--dark .toggle-group,
+      .band--ink .toggle-group {
+        border-color: var(--graphite);
+      }
+      .toggle-btn {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        border-right: 1px solid var(--paper-3);
+        padding: 10px 14px;
+        cursor: pointer;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        transition:
+          background 0.25s var(--ease-std),
+          color 0.25s var(--ease-std);
+      }
+      .toggle-btn:last-child {
+        border-right: 0;
+      }
+      .band--dark .toggle-btn,
+      .band--ink .toggle-btn {
+        border-right-color: var(--graphite);
+        color: var(--tungsten);
+      }
+      .toggle-btn.is-on {
+        background: rgba(77, 140, 255, 0.12);
+        color: var(--ink-blue);
+      }
+      .band--dark .toggle-btn.is-on,
+      .band--ink .toggle-btn.is-on {
+        background: rgba(77, 140, 255, 0.15);
+        color: var(--sapphire);
+      }
+      .legend {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+      .band--dark .legend,
+      .band--ink .legend {
+        color: var(--tungsten);
+      }
+      .legend .sw {
+        display: inline-block;
+        width: 12px;
+        height: 1px;
+        background: currentColor;
+        vertical-align: middle;
+        margin-right: 6px;
+      }
+      .chart-note {
+        font-family: var(--body);
+        font-size: 14px;
+        line-height: 1.65;
+        color: var(--ink-3);
+        margin-top: 12px;
+      }
+      .band--dark .chart-note,
+      .band--ink .chart-note {
+        color: var(--tungsten);
+      }
+      .stats {
+        max-width: var(--col-wide);
+        margin: 48px auto;
+        padding: 0 32px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        border-top: 1px solid var(--paper-3);
+        border-bottom: 1px solid var(--paper-3);
+      }
+      .band--dark .stats,
+      .band--ink .stats {
+        border-color: var(--graphite);
+      }
+      .stats .s {
+        padding: 32px 24px;
+        border-right: 1px solid var(--paper-3);
+      }
+      .stats .s:last-child {
+        border-right: 0;
+      }
+      .band--dark .stats .s,
+      .band--ink .stats .s {
+        border-right-color: var(--graphite);
+      }
+      .stats .v {
+        font-family: var(--mono);
+        font-weight: 500;
+        font-size: 38px;
+        line-height: 1;
+        margin-bottom: 10px;
+      }
+      .band--paper .stats .v {
+        color: var(--ink);
+      }
+      .band--dark .stats .v,
+      .band--ink .stats .v {
+        color: var(--flare);
+      }
+      .stats .l {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+      .band--paper .stats .l {
+        color: var(--ink-3);
+      }
+      .band--dark .stats .l,
+      .band--ink .stats .l {
+        color: var(--tungsten);
+      }
+      .table-wrap {
+        max-width: var(--col-wide);
+        margin: 32px auto;
+        padding: 0 32px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+        line-height: 1.65;
+      }
+      th,
+      td {
+        padding: 14px 16px;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--paper-3);
+      }
+      .band--dark th,
+      .band--dark td,
+      .band--ink th,
+      .band--ink td {
+        border-bottom-color: var(--graphite);
+      }
+      th {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-blue);
+        border-top: 1px solid var(--paper-3);
+      }
+      .band--dark th,
+      .band--ink th {
+        color: var(--sapphire);
+        border-top-color: var(--graphite);
+      }
+      tr:nth-child(even) td {
+        background: rgba(0, 0, 0, 0.025);
+      }
+      .band--dark tr:nth-child(even) td,
+      .band--ink tr:nth-child(even) td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .table-cap {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        margin: 0 auto 12px;
+        max-width: var(--col-wide);
+        padding: 0 32px;
+      }
+      .band--paper .table-cap {
+        color: var(--ink-blue);
+      }
+      .band--dark .table-cap,
+      .band--ink .table-cap {
+        color: var(--sapphire);
+      }
+      .codeblock {
+        max-width: var(--col-wide);
+        margin: 34px auto;
+        padding: 0 32px;
+      }
+      .codeblock pre {
+        background: #0a0a0a;
+        color: #e9eef7;
+        border: 1px solid var(--graphite);
+        padding: 24px;
+        overflow: auto;
+        font-family: var(--mono);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .codeblock .codecap {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--tungsten);
+        margin-bottom: 10px;
+      }
+      .method {
+        max-width: var(--col);
+        margin: 36px auto;
+        padding: 0 32px;
+      }
+      .method .inner {
+        border-left: 2px solid var(--ink-blue);
+        padding: 20px 26px;
+        background: var(--paper-2);
+        font-size: 15.5px;
+        line-height: 1.7;
+        color: var(--ink-2);
+      }
+      .band--dark .method .inner,
+      .band--ink .method .inner {
+        background: var(--charcoal);
+        border-left-color: var(--sapphire);
+        color: var(--platinum);
+      }
+      .method .lab {
+        font-family: var(--mono);
+        font-size: 9.5px;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--ink-blue);
+        margin-bottom: 8px;
+      }
+      .band--dark .method .lab,
+      .band--ink .method .lab {
+        color: var(--sapphire);
+      }
+      .phase-grid {
+        max-width: var(--col-wide);
+        margin: 36px auto;
+        padding: 0 32px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        border-top: 1px solid var(--graphite);
+        border-bottom: 1px solid var(--graphite);
+      }
+      .phase {
+        padding: 28px 24px;
+        border-right: 1px solid var(--graphite);
+      }
+      .phase:last-child {
+        border-right: 0;
+      }
+      .phase .n {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--sapphire);
+        margin-bottom: 12px;
+      }
+      .phase .t {
+        font-family: var(--display);
+        font-size: 22px;
+        line-height: 1.15;
+        color: var(--flare);
+        margin-bottom: 12px;
+      }
+      .phase .d {
+        font-size: 14.5px;
+        line-height: 1.65;
+        color: var(--tungsten);
+      }
+      .sim-grid {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 24px;
+        align-items: start;
+      }
+      .range-lab {
+        display: grid;
+        gap: 16px;
+      }
+      .range-lab .row {
+        display: grid;
+        gap: 8px;
+      }
+      .range-lab label {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+      .band--dark .range-lab label,
+      .band--ink .range-lab label {
+        color: var(--tungsten);
+      }
+      input[type="range"] {
+        width: 100%;
+        accent-color: var(--sapphire-deep);
+      }
+      .band--dark input[type="range"],
+      .band--ink input[type="range"] {
+        accent-color: var(--sapphire);
+      }
+      .metric-card {
+        border: 1px solid var(--paper-3);
+        padding: 18px;
+        background: #fff;
+      }
+      .band--dark .metric-card,
+      .band--ink .metric-card {
+        border-color: var(--graphite);
+        background: #0e0e0e;
+      }
+      .metric-card .ml {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        margin-bottom: 8px;
+      }
+      .band--dark .metric-card .ml,
+      .band--ink .metric-card .ml {
+        color: var(--tungsten);
+      }
+      .metric-card .mv {
+        font-family: var(--display);
+        font-size: 34px;
+        line-height: 1.05;
+      }
+      .band--paper .metric-card .mv {
+        color: var(--ink);
+      }
+      .band--dark .metric-card .mv,
+      .band--ink .metric-card .mv {
+        color: var(--flare);
+      }
+      .metric-card .ms {
+        font-size: 14px;
+        line-height: 1.6;
+        margin-top: 10px;
+      }
+      .band--paper .metric-card .ms {
+        color: var(--ink-3);
+      }
+      .band--dark .metric-card .ms,
+      .band--ink .metric-card .ms {
+        color: var(--tungsten);
+      }
+      .bh-list {
+        list-style: none;
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+      }
+      .bh-item {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 12px;
+        align-items: center;
+        padding: 12px 14px;
+        border: 1px solid var(--paper-3);
+      }
+      .band--dark .bh-item,
+      .band--ink .bh-item {
+        border-color: var(--graphite);
+      }
+      .bh-item .name {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+      .bh-item .pval {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .bh-item .state {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        padding: 6px 8px;
+        border: 1px solid currentColor;
+      }
+      .bh-item.rejected {
+        background: rgba(15, 58, 107, 0.08);
+      }
+      .bh-item.rejected .state {
+        color: var(--ink-blue);
+      }
+      .band--dark .bh-item.rejected,
+      .band--ink .bh-item.rejected {
+        background: rgba(77, 140, 255, 0.08);
+      }
+      .band--dark .bh-item.rejected .state,
+      .band--ink .bh-item.rejected .state {
+        color: var(--sapphire);
+      }
+      .bh-item.retained {
+        opacity: 0.74;
+      }
+      .formula {
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.8;
+        letter-spacing: 0.04em;
+      }
+      .band--paper .formula {
+        color: var(--ink-2);
+      }
+      .band--dark .formula,
+      .band--ink .formula {
+        color: var(--platinum);
+      }
+      .note-box {
+        max-width: var(--col-wide);
+        margin: 36px auto;
+        padding: 0 32px;
+      }
+      .note-box .inner {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        border-top: 1px solid var(--paper-3);
+        border-bottom: 1px solid var(--paper-3);
+      }
+      .band--dark .note-box .inner,
+      .band--ink .note-box .inner {
+        border-color: var(--graphite);
+      }
+      .note-box .left,
+      .note-box .right {
+        padding: 24px;
+      }
+      .note-box .left {
+        border-right: 1px solid var(--paper-3);
+      }
+      .band--dark .note-box .left,
+      .band--ink .note-box .left {
+        border-right-color: var(--graphite);
+      }
+      .note-box .left .lab {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+      }
+      .band--paper .note-box .left .lab {
+        color: var(--ink-blue);
+      }
+      .band--dark .note-box .left .lab,
+      .band--ink .note-box .left .lab {
+        color: var(--sapphire);
+      }
+      .note-box .left .big {
+        font-family: var(--display);
+        font-size: 34px;
+        line-height: 1.06;
+        margin-top: 10px;
+      }
+      .note-box .right p {
+        margin: 0;
+        padding: 0;
+        max-width: none;
+        font-size: 15px;
+        line-height: 1.75;
+      }
+      .back-matter {
+        padding-top: 120px;
+        padding-bottom: 160px;
+      }
+      .back-matter h3 {
+        font-family: var(--display);
+        font-weight: 600;
+        font-size: 24px;
+        line-height: 1.2;
+        color: var(--flare);
+        margin: 0 auto 22px;
+        max-width: var(--col-wide);
+        padding: 0 48px;
+      }
+      .back-matter .biblio {
+        max-width: var(--col-wide);
+        margin: 0 auto 60px;
+        padding: 0 48px;
+      }
+      .back-matter .biblio li {
+        list-style: none;
+        font-size: 14.5px;
+        line-height: 1.65;
+        color: var(--platinum);
+        padding: 14px 0;
+        border-top: 1px solid var(--graphite);
+        display: grid;
+        grid-template-columns: 58px 1fr;
+        gap: 18px;
+      }
+      .back-matter .biblio li:last-child {
+        border-bottom: 1px solid var(--graphite);
+      }
+      .back-matter .biblio .n {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--sapphire);
+        letter-spacing: 0.2em;
+      }
+      .back-matter .biblio .ent i {
+        color: var(--tungsten);
+      }
+      footer.site-foot {
+        background: var(--obsidian);
+        color: var(--tungsten);
+        padding: 60px 48px;
+        border-top: 1px solid var(--graphite);
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .reveal {
+        opacity: 0;
+        transform: translateY(18px);
+        transition:
+          opacity 0.9s var(--ease-out),
+          transform 0.9s var(--ease-out);
+      }
+      .reveal.is-on {
+        opacity: 1;
+        transform: none;
+      }
+      .parallax {
+        transform: translate3d(0, 0, 0);
+        will-change: transform;
+      }
+      section.band:not(.front) {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      section.band:not(.front) > * {
+        width: 100%;
+        max-width: var(--col);
+        margin-left: auto;
+        margin-right: auto;
+      }
+      section.band:not(.front) > .col-wide,
+      section.band:not(.front) > .figure,
+      section.band:not(.front) > .stats,
+      section.band:not(.front) > .table-wrap,
+      section.band:not(.front) > .codeblock,
+      section.band:not(.front) > .phase-grid,
+      section.band:not(.front) > .note-box {
+        max-width: var(--col-wide);
+      }
+      @media (min-width: 980px) {
+        .front .grid {
+          grid-template-columns: minmax(0, 1fr) 320px;
+          gap: 80px;
+          align-items: end;
+        }
+      }
+      @media (min-width: 1180px) and (max-width: 1359px) {
+        #spine {
+          width: 44px;
+          overflow: hidden;
+          white-space: nowrap;
+          transition:
+            width 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+            background 0.6s var(--ease-std);
+        }
+        #spine:hover {
+          width: 250px;
+        }
+      }
+      @media (max-width: 1180px) {
+        #spine {
+          display: none;
+        }
+      }
+      @media (max-width: 980px) {
+        .figure-grid,
+        .sim-grid,
+        .note-box .inner {
+          grid-template-columns: 1fr;
+        }
+        .note-box .left {
+          border-right: 0;
+          border-bottom: 1px solid var(--paper-3);
+        }
+        .band--dark .note-box .left,
+        .band--ink .note-box .left {
+          border-bottom-color: var(--graphite);
+        }
+        .phase-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .phase:nth-child(2) {
+          border-right: 0;
+        }
+        .stats {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .stats .s:nth-child(2) {
+          border-right: 0;
+        }
+      }
+      @media (max-width: 760px) {
+        body {
+          font-size: 16px;
+        }
+        #topnav {
+          padding: 0 20px;
+        }
+        #topnav .crumbs {
+          display: none;
+        }
+        .col,
+        .figure,
+        .table-wrap,
+        .codeblock,
+        .phase-grid,
+        .stats,
+        .note-box {
+          padding-left: 20px;
+          padding-right: 20px;
+        }
+        .col-wide {
+          padding: 0 24px;
+        }
+        .front {
+          padding-top: 120px;
+        }
+        .front h1 {
+          font-size: clamp(30px, 11vw, 44px);
+        }
+        .phase-grid,
+        .stats {
+          grid-template-columns: 1fr;
+        }
+        .phase,
+        .stats .s {
+          border-right: 0;
+          border-bottom: 1px solid var(--graphite);
+        }
+        .phase:last-child,
+        .stats .s:last-child {
+          border-bottom: 0;
+        }
+        table {
+          font-size: 13px;
+        }
+        th,
+        td {
+          padding: 10px 12px;
+        }
+        #status {
+          right: 12px;
+          bottom: 12px;
+          gap: 10px;
+          padding: 8px 10px;
+          font-size: 9px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="atmosphere"></div>
+    <div id="progress"></div>
+    <header id="topnav">
+      <a href="#" class="brand">Heather Leffew portfolio</a>
+      <div class="crumbs">
+        <a href="#">Portfolio</a>
+        <span class="sep">/</span>
+        <a href="#">Synthesized Projects</a>
+        <span class="sep">/</span>
+        <span>Granular Intersectional Monitoring</span>
+      </div>
+    </header>
+    <aside id="spine"></aside>
+    <div id="status">
+      <span class="dot"></span><span class="sec">Front matter</span
+      ><span class="pct">0%</span><span>/</span
+      ><span class="time">~12 min</span>
+    </div>
+
+    <section
+      class="band band--dark front"
+      data-spine="Front"
+      data-section="Front matter"
+    >
+      <div class="ambient" aria-hidden="true">
+        <svg viewBox="0 0 600 600" fill="none">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#4D8CFF" stop-opacity="0.55"></stop>
+              <stop offset="100%" stop-color="#0F52BA" stop-opacity="0"></stop>
+            </linearGradient>
+          </defs>
+          <g stroke="url(#g1)" stroke-width="1" fill="none">
+            <circle cx="300" cy="300" r="80"></circle>
+            <circle cx="300" cy="300" r="140"></circle>
+            <circle cx="300" cy="300" r="200"></circle>
+            <circle cx="300" cy="300" r="260"></circle>
+          </g>
+          <line
+            x1="60"
+            y1="540"
+            x2="540"
+            y2="60"
+            stroke="#4D8CFF"
+            stroke-width="1"
+            stroke-dasharray="2 6"
+            opacity="0.8"
+          ></line>
+          <g fill="#4D8CFF" opacity="0.7">
+            <circle cx="116" cy="492" r="2.5"></circle>
+            <circle cx="182" cy="432" r="2.5"></circle>
+            <circle cx="242" cy="378" r="2.5"></circle>
+            <circle cx="304" cy="314" r="2.5"></circle>
+            <circle cx="364" cy="256" r="2.5"></circle>
+            <circle cx="426" cy="196" r="2.5"></circle>
+            <circle cx="488" cy="138" r="2.5"></circle>
+          </g>
+        </svg>
+      </div>
+      <div class="col-wide">
+        <div class="meta-row">
+          <span>Case study</span><span class="sep">/</span
+          ><span>Intersectional safety analytics</span><span class="sep">/</span
+          ><span>Outcome-first experimentation</span>
+        </div>
+        <div class="grid">
+          <div>
+            <h1>Granular Intersectional Monitoring</h1>
+            <p class="abstract">
+              A quantitative framework for detecting user harm that global
+              experiment averages routinely erase. Styled in Obsidian-Chrome:
+              dark-first, editorial, zero-radius, publication-minded.
+            </p>
+            <div class="byline">
+              <div>Content type<strong>Academic case-study</strong></div>
+              <div>Mode<strong>Dark / paper alternating bands</strong></div>
+              <div>
+                Interactivity<strong
+                  >Intersection toggle + FDR lab + a11y proxy</strong
+                >
+              </div>
+            </div>
+          </div>
+          <div class="citation">
+            <b>Source posture.</b> Internal synthesized project brief
+            transformed into standalone portfolio HTML. External APA references
+            were not embedded in source file, so this artifact preserves
+            source-grounded technical content and marks bibliography as
+            reference-ready rather than fabricated.<br />
+            <b>Design lineage.</b> Obsidian-Chrome article language adapted from
+            portfolio case-study shells in
+            <code>portfolio-design-system/ui_kits/case-study</code>.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="band band--paper reveal"
+      data-spine="Problem"
+      data-section="Global win, local harm"
+    >
+      <div class="eyebrow">Problem framing</div>
+      <h2>Global experiment lift can hide severe local regressions.</h2>
+      <p class="lede">
+        Users do not experience products as flat averages. They experience them
+        at intersections of region, hardware, tenure, accessibility behavior,
+        plan type, and task context.
+      </p>
+      <p>
+        Standard experimentation dashboards optimize for the mythical average
+        user. A release can lift engagement globally, shave latency globally,
+        and still impose sharp friction on a small but meaningful subgroup such
+        as new, solo users in a specific geography on older hardware.
+        Traditional segmentation often misses this because subgroup losses are
+        mathematically washed out by majority gains.
+      </p>
+      <p>
+        Granular Intersectional Monitoring Platform, or IMP, reframes this
+        problem as an engineering systems issue rather than a one-off analytics
+        drill. Instead of pre-specifying thousands of possible cohorts and
+        diluting statistical power, it starts with observed bad outcomes, then
+        works backward to find overrepresented intersections worth validating.
+      </p>
+
+      <div class="figure reveal">
+        <div class="frame parallax">
+          <div class="figure-grid">
+            <div>
+              <div class="toggle-row">
+                <div class="viz-title">View mode</div>
+                <div
+                  class="toggle-group"
+                  role="tablist"
+                  aria-label="Chart mode"
+                >
+                  <button
+                    class="toggle-btn is-on"
+                    id="mode-global"
+                    type="button"
+                  >
+                    Global
+                  </button>
+                  <button
+                    class="toggle-btn"
+                    id="mode-intersectional"
+                    type="button"
+                  >
+                    Intersectional
+                  </button>
+                </div>
+              </div>
+              <div class="viz-shell">
+                <svg
+                  id="impactChart"
+                  viewBox="0 0 620 360"
+                  aria-labelledby="impactChartTitle"
+                  role="img"
+                >
+                  <title id="impactChartTitle">
+                    Global versus intersectional experiment performance
+                  </title>
+                  <rect
+                    x="0"
+                    y="0"
+                    width="620"
+                    height="360"
+                    fill="transparent"
+                  ></rect>
+                  <g stroke="rgba(0,0,0,0.08)" stroke-width="1">
+                    <line x1="72" y1="50" x2="72" y2="300"></line>
+                    <line x1="72" y1="300" x2="572" y2="300"></line>
+                    <line x1="72" y1="240" x2="572" y2="240"></line>
+                    <line x1="72" y1="180" x2="572" y2="180"></line>
+                    <line x1="72" y1="120" x2="572" y2="120"></line>
+                    <line x1="72" y1="60" x2="572" y2="60"></line>
+                  </g>
+                  <g
+                    fill="#5E5E5A"
+                    font-family="JetBrains Mono, monospace"
+                    font-size="11"
+                    letter-spacing="2"
+                  >
+                    <text x="18" y="304">-2%</text>
+                    <text x="18" y="244">0%</text>
+                    <text x="18" y="184">2%</text>
+                    <text x="18" y="124">4%</text>
+                    <text x="18" y="64">6%</text>
+                    <text x="90" y="328">wk1</text>
+                    <text x="190" y="328">wk2</text>
+                    <text x="290" y="328">wk3</text>
+                    <text x="390" y="328">wk4</text>
+                    <text x="490" y="328">wk5</text>
+                  </g>
+                  <polyline
+                    id="globalLine"
+                    fill="none"
+                    stroke="#0F3A6B"
+                    stroke-width="4"
+                    points="92,214 192,194 292,176 392,160 492,142 552,124"
+                  ></polyline>
+                  <g id="intersectionLines" opacity="0">
+                    <polyline
+                      fill="none"
+                      stroke="#3866A0"
+                      stroke-width="3"
+                      points="92,212 192,198 292,186 392,166 492,156 552,144"
+                    ></polyline>
+                    <polyline
+                      fill="none"
+                      stroke="#1A4A38"
+                      stroke-width="3"
+                      points="92,230 192,214 292,202 392,196 492,188 552,178"
+                    ></polyline>
+                    <polyline
+                      fill="none"
+                      stroke="#DBA844"
+                      stroke-width="3"
+                      points="92,218 192,205 292,214 392,224 492,238 552,250"
+                    ></polyline>
+                    <polyline
+                      fill="none"
+                      stroke="#7A1626"
+                      stroke-width="3.5"
+                      points="92,220 192,214 292,228 392,246 492,272 552,292"
+                    ></polyline>
+                  </g>
+                </svg>
+              </div>
+              <div class="legend" id="impactLegend">
+                <span
+                  ><span class="sw" style="background: #0f3a6b"></span>global
+                  metric</span
+                >
+              </div>
+              <div class="chart-note" id="impactNote">
+                Global view suggests steady positive lift and no urgent
+                investigation.
+              </div>
+            </div>
+            <div>
+              <div class="viz-title">Hidden harm mosaic</div>
+              <div class="viz-shell">
+                <svg
+                  viewBox="0 0 420 360"
+                  role="img"
+                  aria-label="Mosaic showing majority positive area and small harmed intersection"
+                >
+                  <rect
+                    x="18"
+                    y="18"
+                    width="384"
+                    height="324"
+                    fill="none"
+                    stroke="currentColor"
+                    opacity="0.3"
+                  ></rect>
+                  <rect
+                    x="18"
+                    y="18"
+                    width="384"
+                    height="324"
+                    fill="#E9EEF7"
+                  ></rect>
+                  <rect
+                    x="18"
+                    y="18"
+                    width="264"
+                    height="324"
+                    fill="#DCE9FF"
+                  ></rect>
+                  <rect
+                    x="282"
+                    y="18"
+                    width="120"
+                    height="226"
+                    fill="#C7DFFF"
+                  ></rect>
+                  <rect
+                    x="282"
+                    y="244"
+                    width="120"
+                    height="98"
+                    fill="#E6F0FF"
+                  ></rect>
+                  <rect
+                    x="324"
+                    y="272"
+                    width="78"
+                    height="70"
+                    fill="#F9E8EB"
+                    stroke="#7A1626"
+                    stroke-width="2"
+                  ></rect>
+                  <rect
+                    x="338"
+                    y="286"
+                    width="64"
+                    height="56"
+                    fill="#F4CED7"
+                  ></rect>
+                  <text
+                    x="36"
+                    y="44"
+                    font-family="JetBrains Mono, monospace"
+                    font-size="11"
+                    letter-spacing="2"
+                    fill="#1A3A6B"
+                  >
+                    MAJORITY UPLIFT
+                  </text>
+                  <text
+                    x="294"
+                    y="40"
+                    font-family="JetBrains Mono, monospace"
+                    font-size="11"
+                    letter-spacing="2"
+                    fill="#1A3A6B"
+                  >
+                    NESTED COHORTS
+                  </text>
+                  <text
+                    x="335"
+                    y="304"
+                    font-family="JetBrains Mono, monospace"
+                    font-size="10"
+                    letter-spacing="1.4"
+                    fill="#7A1626"
+                  >
+                    NEW
+                  </text>
+                  <text
+                    x="335"
+                    y="318"
+                    font-family="JetBrains Mono, monospace"
+                    font-size="10"
+                    letter-spacing="1.4"
+                    fill="#7A1626"
+                  >
+                    SOLO
+                  </text>
+                  <text
+                    x="335"
+                    y="332"
+                    font-family="JetBrains Mono, monospace"
+                    font-size="10"
+                    letter-spacing="1.4"
+                    fill="#7A1626"
+                  >
+                    OLD HW
+                  </text>
+                </svg>
+              </div>
+              <div class="chart-note">
+                Small harmed rectangles vanish in summary averages unless
+                discovery begins from outcomes, not pre-selected slices.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <span class="num">Figure 01</span>Toggle between global and
+          intersectional views. Same experiment, opposite policy implication.
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="band band--ink reveal"
+      data-spine="Origins"
+      data-section="Juggernaut and SCOPEX"
+    >
+      <div class="pullquote">
+        If harmful trajectories are systematic, they can be measured before they
+        are explained away.<span class="qa">Historical posture</span>
+      </div>
+    </section>
+
+    <section
+      class="band band--paper reveal"
+      data-spine="Origins+"
+      data-section="Foundational projects"
+    >
+      <div class="eyebrow">Foundations</div>
+      <h2>
+        Juggernaut and SCOPEX established two non-negotiables: longitudinal
+        framing and explainability.
+      </h2>
+      <p>
+        The IMP design inherits from two earlier safety programs. Project
+        Juggernaut handled retrospective regulatory analysis at scale. Project
+        SCOPEX translated those findings into a real-time intervention system.
+        Together they forced a move away from reactive dashboards and toward
+        systematic quantitative monitoring.
+      </p>
+
+      <h3>Project Juggernaut · within-subjects longitudinal analysis</h3>
+      <p>
+        Juggernaut analyzed how users arrived at harmful platform experiences
+        when manual review was impossible. Its core insight was methodological:
+        use each user as their own control. Rather than compare unlike users,
+        split one user’s journey into early, middle, and late tertiles, then
+        measure sentiment drift and diversity narrowing over time.
+      </p>
+      <div class="table-cap">
+        Table 01 · Sample within-subjects tertile analysis
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>Phase</th>
+              <th>Avg. sentiment</th>
+              <th>Content diversity</th>
+              <th>Flagged</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>U-8829</td>
+              <td>Early</td>
+              <td>0.65</td>
+              <td>0.22 · High diversity</td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td>U-8829</td>
+              <td>Middle</td>
+              <td>0.40</td>
+              <td>0.45 · Moderate diversity</td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td>U-8829</td>
+              <td>Late</td>
+              <td>-0.35</td>
+              <td>0.81 · Narrow focus</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>U-1102</td>
+              <td>Early</td>
+              <td>0.55</td>
+              <td>0.25 · High diversity</td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td>U-1102</td>
+              <td>Middle</td>
+              <td>0.58</td>
+              <td>0.24 · High diversity</td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td>U-1102</td>
+              <td>Late</td>
+              <td>0.60</td>
+              <td>0.26 · High diversity</td>
+              <td>No</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="figure reveal">
+        <div class="frame parallax">
+          <div class="viz-title">
+            Trajectory sketch · time × sentiment × diversity
+          </div>
+          <div class="viz-shell">
+            <svg
+              viewBox="0 0 760 360"
+              role="img"
+              aria-label="Pseudo-3D user trajectories"
+            >
+              <rect
+                x="0"
+                y="0"
+                width="760"
+                height="360"
+                fill="transparent"
+              ></rect>
+              <g stroke="rgba(0,0,0,0.1)" stroke-width="1" fill="none">
+                <line x1="88" y1="290" x2="640" y2="290"></line>
+                <line x1="88" y1="290" x2="88" y2="82"></line>
+                <line x1="88" y1="290" x2="210" y2="182"></line>
+                <line x1="272" y1="290" x2="394" y2="182"></line>
+                <line x1="456" y1="290" x2="578" y2="182"></line>
+              </g>
+              <g
+                font-family="JetBrains Mono, monospace"
+                font-size="11"
+                letter-spacing="2"
+                fill="#5E5E5A"
+              >
+                <text x="80" y="316">EARLY</text>
+                <text x="264" y="316">MIDDLE</text>
+                <text x="452" y="316">LATE</text>
+                <text x="28" y="86">SENTIMENT ↑</text>
+                <text x="214" y="164">DIVERSITY ↑</text>
+              </g>
+              <polyline
+                fill="none"
+                stroke="#1A4A38"
+                stroke-width="3"
+                points="122,138 300,142 492,132"
+              ></polyline>
+              <circle cx="122" cy="138" r="5" fill="#1A4A38"></circle>
+              <circle cx="300" cy="142" r="5" fill="#1A4A38"></circle>
+              <circle cx="492" cy="132" r="5" fill="#1A4A38"></circle>
+              <polyline
+                fill="none"
+                stroke="#7A1626"
+                stroke-width="3.5"
+                points="142,124 330,180 526,264"
+              ></polyline>
+              <circle cx="142" cy="124" r="5" fill="#7A1626"></circle>
+              <circle cx="330" cy="180" r="5" fill="#7A1626"></circle>
+              <circle cx="526" cy="264" r="5" fill="#7A1626"></circle>
+              <polyline
+                fill="none"
+                stroke="#3866A0"
+                stroke-width="2.5"
+                stroke-dasharray="6 7"
+                points="124,156 304,176 486,196"
+              ></polyline>
+            </svg>
+          </div>
+          <div class="chart-note">
+            Healthy trajectories stay stable or improve. Degrading trajectories
+            move downward and inward toward low-sentiment, low-diversity space.
+          </div>
+        </div>
+        <div class="cap">
+          <span class="num">Figure 02</span>Juggernaut proved degradation was a
+          measurable path, not post-hoc narrative.
+        </div>
+      </div>
+
+      <h3>Project SCOPEX · explainability mandate</h3>
+      <p>
+        SCOPEX moved from retrospective analysis to intervention. It monitored
+        five degradation signals: diversity narrowing, sentiment decline,
+        policy-violation acceleration, violative-content exposure, and negative
+        search behavior. During implementation, a black-box model achieved
+        stronger raw precision, but stakeholders rejected it because they could
+        not inspect why a user was flagged.
+      </p>
+      <div class="table-cap">Table 02 · Model trade-off analysis</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Model type</th>
+              <th>Precision</th>
+              <th>Recall</th>
+              <th>Explainability</th>
+              <th>Decision</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Deep neural network</td>
+              <td>94.2%</td>
+              <td>89.5%</td>
+              <td>Low · feature importance only</td>
+              <td>Rejected</td>
+            </tr>
+            <tr>
+              <td>Logistic regression</td>
+              <td>91.2%</td>
+              <td>87.1%</td>
+              <td>High · exact coefficients and odds ratios</td>
+              <td>Approved</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="method">
+        <div class="inner">
+          <div class="lab">Design rule carried into IMP</div>
+          High-stakes experimentation cannot hide behind predictive accuracy. If
+          product, policy, legal, or safety stakeholders cannot inspect why a
+          subgroup was flagged, model quality is incomplete even when metrics
+          look strong.
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="band band--ink reveal"
+      data-spine="IMP"
+      data-section="Platform overview"
+    >
+      <div class="eyebrow">Platform architecture</div>
+      <h2>
+        IMP reverses standard segmentation order: outcome first, explanation
+        second.
+      </h2>
+      <p>
+        Rather than guess which user cohorts might be harmed, IMP identifies
+        users with negative outcomes, detects overrepresented intersections
+        among them, validates those intersections statistically, then trains
+        interpretable predictive layers on confirmed patterns. That sequencing
+        is the core architectural move.
+      </p>
+      <div class="stats">
+        <div class="s">
+          <div class="v">19</div>
+          <div class="l">Constrained persona variables</div>
+        </div>
+        <div class="s">
+          <div class="v">4</div>
+          <div class="l">Platform phases</div>
+        </div>
+        <div class="s">
+          <div class="v">7σ</div>
+          <div class="l">Regression alert threshold</div>
+        </div>
+        <div class="s">
+          <div class="v">200</div>
+          <div class="l">k-anonymity floor</div>
+        </div>
+      </div>
+      <div class="phase-grid">
+        <div class="phase">
+          <div class="n">Phase 01</div>
+          <div class="t">Discovery</div>
+          <div class="d">
+            Find high-friction users and scan for overrepresented intersections
+            rather than enumerate every cohort upfront.
+          </div>
+        </div>
+        <div class="phase">
+          <div class="n">Phase 02</div>
+          <div class="t">Predictive layer</div>
+          <div class="d">
+            Train elastic-net logistic models on validated harm labels to
+            estimate risk earlier in experiment lifecycles.
+          </div>
+        </div>
+        <div class="phase">
+          <div class="n">Phase 03</div>
+          <div class="t">Continuous monitoring</div>
+          <div class="d">
+            Watch platform regressions across high-volume intersections and
+            route quantified alerts to engineers.
+          </div>
+        </div>
+        <div class="phase">
+          <div class="n">Phase 04</div>
+          <div class="t">Simulation</div>
+          <div class="d">
+            Estimate likely effect sizes and uncertainty before rollout so teams
+            can stage exposure responsibly.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="band band--paper reveal"
+      data-spine="Validation"
+      data-section="Outcome-first discovery and validation"
+    >
+      <div class="eyebrow">Phase 01</div>
+      <h2>
+        Discovery stays narrow by validating only intersections that are
+        empirically overrepresented among bad outcomes.
+      </h2>
+      <p class="lede">
+        This is where IMP avoids both combinatorial explosion and statistical
+        theater.
+      </p>
+      <ol class="steps">
+        <li>
+          <b>Outcome identification.</b> Compute a composite negative-outcome
+          score from churn, support tickets, high undo-command rates,
+          abandonment, or comparable friction signals.
+        </li>
+        <li>
+          <b>Intersection analysis.</b> Scan the constrained persona schema for
+          attribute combinations that appear disproportionately among struggling
+          users relative to background distribution.
+        </li>
+        <li>
+          <b>Targeted validation.</b> Compare treatment versus control inside
+          those candidate intersections with Welch’s t-test, chosen because
+          small subgroup samples rarely support equal-variance assumptions.
+        </li>
+        <li>
+          <b>Multiple-comparison control.</b> Apply Benjamini-Hochberg to keep
+          the false discovery rate bounded when several candidate intersections
+          survive discovery.
+        </li>
+      </ol>
+
+      <div class="figure reveal">
+        <div class="frame parallax">
+          <div class="sim-grid">
+            <div>
+              <div class="viz-title">Interactive FDR calculator</div>
+              <div class="range-lab">
+                <div class="row">
+                  <label for="fdrAlpha"
+                    ><span>FDR alpha</span
+                    ><span id="fdrAlphaValue">0.05</span></label
+                  >
+                  <input
+                    id="fdrAlpha"
+                    type="range"
+                    min="0.01"
+                    max="0.10"
+                    step="0.01"
+                    value="0.05"
+                  />
+                </div>
+                <div class="metric-card">
+                  <div class="ml">Benjamini-Hochberg cutoff</div>
+                  <div class="mv" id="bhCutoff">0.045</div>
+                  <div class="ms" id="bhSummary">
+                    Three hypotheses survive correction at α = 0.05.
+                  </div>
+                </div>
+                <ul class="bh-list" id="bhList"></ul>
+              </div>
+            </div>
+            <div>
+              <div class="metric-card" style="margin-bottom: 16px">
+                <div class="ml">Why this matters</div>
+                <div class="mv">FDR ≠ raw p</div>
+                <div class="ms">
+                  Without correction, targeted subgroup testing becomes
+                  false-positive inflation by another name.
+                </div>
+              </div>
+              <div class="metric-card formula">
+                Ordered p-values satisfy rejection when <br /><br />
+                p(i) ≤ (i / m) × α<br /><br />
+                where <b>i</b> is rank, <b>m</b> total tests, and
+                <b>α</b> chosen FDR threshold.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <span class="num">Figure 03</span>Benjamini-Hochberg keeps focused
+          subgroup testing from turning into uncontrolled fishing.
+        </div>
+      </div>
+
+      <div class="codeblock">
+        <div class="codecap">Python · Welch’s t-test + Benjamini-Hochberg</div>
+        <pre><code># Implementation of Step 3 and 4: Welch's t-test and Benjamini-Hochberg
+import pandas as pd
+from scipy import stats
+from statsmodels.stats.multitest import multipletests
+
+def validate_intersections(candidate_intersections, treatment_data, control_data, fdr_alpha=0.05):
+    results = []
+    
+    # Step 3: Targeted Validation (Welch's t-test)
+    for intersection in candidate_intersections:
+        treatment_group = treatment_data[treatment_data['segment'] == intersection]['outcome_score']
+        control_group = control_data[control_data['segment'] == intersection]['outcome_score']
+        
+        # Welch's t-test (equal_var=False)
+        t_stat, p_val = stats.ttest_ind(treatment_group, control_group, equal_var=False)
+        results.append({'intersection': intersection, 'p_value': p_val, 't_stat': t_stat})
+        
+    df_results = pd.DataFrame(results)
+    
+    # Step 4: Multiple Comparison Control (Benjamini-Hochberg)
+    reject, pvals_corrected, _, _ = multipletests(df_results['p_value'], alpha=fdr_alpha, method='fdr_bh')
+    
+    df_results['is_significant'] = reject
+    df_results['p_value_adj'] = pvals_corrected
+    
+    return df_results[df_results['is_significant'] == True]</code></pre>
+      </div>
+    </section>
+
+    <section
+      class="band band--ink reveal"
+      data-spine="Predictive"
+      data-section="Predictive modeling"
+    >
+      <div class="eyebrow">Phase 02</div>
+      <h2>
+        Elastic Net keeps early warning interpretable even when features
+        overlap.
+      </h2>
+      <p>
+        Once intersections are validated, IMP uses them as labels for predictive
+        modeling. Experiments are featurized from intersection attributes and
+        experiment metadata, then scored with an elastic-net logistic
+        classifier. L1 pressure zeros irrelevant interaction terms; L2 pressure
+        stabilizes correlated ones. Class weighting corrects for the fact that
+        harm is rare by design.
+      </p>
+
+      <div class="figure reveal">
+        <div class="frame parallax">
+          <div class="viz-title">Coefficient path sketch</div>
+          <div class="viz-shell">
+            <svg
+              viewBox="0 0 760 330"
+              role="img"
+              aria-label="Coefficient path plot"
+            >
+              <g stroke="rgba(255,255,255,0.08)" stroke-width="1">
+                <line x1="84" y1="40" x2="84" y2="278"></line>
+                <line x1="84" y1="160" x2="696" y2="160"></line>
+                <line x1="84" y1="278" x2="696" y2="278"></line>
+              </g>
+              <g
+                font-family="JetBrains Mono, monospace"
+                font-size="11"
+                letter-spacing="2"
+                fill="#A1A1A6"
+              >
+                <text x="24" y="44">β</text>
+                <text x="92" y="304">low λ</text>
+                <text x="600" y="304">high λ</text>
+                <text x="22" y="164">0</text>
+              </g>
+              <path
+                d="M96 78 C180 86, 248 104, 324 130 S508 170, 682 160"
+                fill="none"
+                stroke="#4D8CFF"
+                stroke-width="3.5"
+              ></path>
+              <path
+                d="M96 112 C190 120, 248 142, 322 160 S510 178, 682 160"
+                fill="none"
+                stroke="#DBA844"
+                stroke-width="3"
+              ></path>
+              <path
+                d="M96 214 C182 204, 250 190, 322 170 S492 158, 682 160"
+                fill="none"
+                stroke="#1A4A38"
+                stroke-width="3"
+              ></path>
+              <path
+                d="M96 250 C180 236, 240 208, 308 180 S390 158, 468 160 S590 160, 682 160"
+                fill="none"
+                stroke="#7A1626"
+                stroke-width="3"
+              ></path>
+              <path
+                d="M96 138 C180 140, 246 146, 320 154 S438 159, 682 160"
+                fill="none"
+                stroke="#8E8E93"
+                stroke-width="2"
+                stroke-dasharray="5 7"
+              ></path>
+            </svg>
+          </div>
+          <div class="chart-note">
+            As regularization strengthens, noisy interactions collapse toward
+            zero while persistent drivers remain legible enough to explain.
+          </div>
+        </div>
+        <div class="cap">
+          <span class="num">Figure 04</span>Elastic Net supplies sparsity and
+          correlation handling without giving up inspectable coefficients.
+        </div>
+      </div>
+
+      <div class="codeblock">
+        <div class="codecap">Python · Elastic Net logistic classifier</div>
+        <pre><code>from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+def train_predictive_model(X_train, y_train):
+    # X_train contains one-hot encoded intersection attributes and metadata
+    # y_train contains binary labels of validated harm (1) or normal (0)
+    
+    pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('classifier', LogisticRegression(
+            penalty='elasticnet',
+            l1_ratio=0.5,
+            solver='saga',
+            class_weight='balanced',
+            max_iter=1000
+        ))
+    ])
+    
+    pipeline.fit(X_train, y_train)
+    return pipeline</code></pre>
+      </div>
+    </section>
+
+    <section
+      class="band band--paper reveal"
+      data-spine="Privacy"
+      data-section="Schema and accessibility proxies"
+    >
+      <div class="eyebrow">Schema design</div>
+      <h2>
+        Constraint is not limitation here. Constraint is what makes
+        intersectional math tractable.
+      </h2>
+      <p>
+        IMP intentionally restricts personas to 19 selected variables spread
+        across categorical, continuous, and binary types. That bounded schema is
+        how the system computes multi-way interactions without exploding search
+        cost or collapsing sample sizes into useless dust.
+      </p>
+      <div class="table-cap">Table 03 · Constrained user schema examples</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Variable type</th>
+              <th>Attribute name</th>
+              <th>Allowed values / range</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Categorical</td>
+              <td><code>journey_stage</code></td>
+              <td>Onboarding, Core, Power, Churn-Risk</td>
+            </tr>
+            <tr>
+              <td>Categorical</td>
+              <td><code>os_family</code></td>
+              <td>Windows, macOS, Linux, Mobile</td>
+            </tr>
+            <tr>
+              <td>Continuous</td>
+              <td><code>tenure_days</code></td>
+              <td>0 to 3650+</td>
+            </tr>
+            <tr>
+              <td>Continuous</td>
+              <td><code>undo_rate_per_hr</code></td>
+              <td>0.0 to 50.0+</td>
+            </tr>
+            <tr>
+              <td>Binary</td>
+              <td><code>is_solo_user</code></td>
+              <td>True, False</td>
+            </tr>
+            <tr>
+              <td>Binary</td>
+              <td><code>is_new_user</code></td>
+              <td>True, False</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Accessibility monitoring introduces a harder problem. Directly
+        fingerprinting assistive technology is ethically fraught and
+        privacy-invasive. IMP therefore materializes an accessibility-likelihood
+        proxy from transparent, behavior-based signals observed over rolling
+        windows.
+      </p>
+
+      <div class="figure reveal">
+        <div class="frame parallax">
+          <div class="sim-grid">
+            <div>
+              <div class="viz-title">
+                Accessibility likelihood materialization
+              </div>
+              <div class="range-lab">
+                <div class="row">
+                  <label for="optInFlag"
+                    ><span>Explicit accessibility opt-in</span
+                    ><span id="optInValue">Off</span></label
+                  >
+                  <input
+                    id="optInFlag"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="1"
+                    value="0"
+                  />
+                </div>
+                <div class="row">
+                  <label for="keyboardScore"
+                    ><span>Keyboard navigation z-score</span
+                    ><span id="keyboardValue">1.2</span></label
+                  >
+                  <input
+                    id="keyboardScore"
+                    type="range"
+                    min="-1"
+                    max="4"
+                    step="0.1"
+                    value="1.2"
+                  />
+                </div>
+                <div class="row">
+                  <label for="ariaScore"
+                    ><span>ARIA / skip-link z-score</span
+                    ><span id="ariaValue">0.8</span></label
+                  >
+                  <input
+                    id="ariaScore"
+                    type="range"
+                    min="-1"
+                    max="4"
+                    step="0.1"
+                    value="0.8"
+                  />
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="metric-card" style="margin-bottom: 14px">
+                <div class="ml">Raw proxy score</div>
+                <div class="mv" id="rawProxy">3.40</div>
+                <div class="ms">
+                  4.0 × opt-in + 1.5 × positive keyboard z + 2.0 × positive ARIA
+                  z
+                </div>
+              </div>
+              <div class="metric-card" style="margin-bottom: 14px">
+                <div class="ml">Sigmoid probability</div>
+                <div class="mv" id="proxyProbability">0.968</div>
+                <div class="ms">
+                  Probability-like scale prevents unbounded composite scores.
+                </div>
+              </div>
+              <div class="metric-card">
+                <div class="ml">Threshold result</div>
+                <div class="mv" id="proxyFlag">Flagged</div>
+                <div class="ms">
+                  Users above 0.6 enter the intersectional analysis as
+                  accessibility-likelihood positive.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <span class="num">Figure 05</span>Privacy-preserving accessibility
+          detection built from transparent behavior rather than hidden device
+          fingerprinting.
+        </div>
+      </div>
+
+      <div class="codeblock">
+        <div class="codecap">PySpark · accessibility proxy materialization</div>
+        <pre><code>import pyspark.sql.functions as F
+from pyspark.sql.types import DoubleType
+import math
+
+# UDF for Sigmoid function
+def sigmoid(x):
+    return 1 / (1 + math.exp(-x))
+sigmoid_udf = F.udf(sigmoid, DoubleType())
+
+def calculate_accessibility_proxy(df_events):
+    # Assume df_events contains z_scores for behaviors and opt_in flags
+    df_scored = df_events.withColumn(
+        "raw_score",
+        (F.col("opt_in_flag") * 4.0) + 
+        (F.when(F.col("z_score_keyboard_nav") > 0, F.col("z_score_keyboard_nav") * 1.5).otherwise(0)) +
+        (F.when(F.col("z_score_aria_usage") > 0, F.col("z_score_aria_usage") * 2.0).otherwise(0))
+    )
+    
+    # Apply sigmoid to map to 0.0 - 1.0 probability range
+    df_probabilities = df_scored.withColumn(
+        "accessibility_likelihood", 
+        sigmoid_udf(F.col("raw_score"))
+    )
+    
+    # Flag users exceeding the 0.6 threshold
+    return df_probabilities.withColumn(
+        "is_a11y_proxy", 
+        F.when(F.col("accessibility_likelihood") > 0.6, True).otherwise(False)
+    )</code></pre>
+      </div>
+    </section>
+
+    <section
+      class="band band--ink reveal"
+      data-spine="Architecture"
+      data-section="System architecture and governance"
+    >
+      <div class="eyebrow">Medallion system</div>
+      <h2>
+        Bronze to Gold pipeline translates raw events into risk registries,
+        plain-language reports, and auditable suppression logic.
+      </h2>
+      <p>
+        IMP runs on an AWS-native medallion architecture. Bronze stores raw
+        events, session metrics, and experiment assignments in S3. Silver
+        normalizes them into daily joined snapshots with PySpark. Gold executes
+        Python-based intersectional modeling, then emits FDR-adjusted findings,
+        risk registries, and delivery artifacts such as HTML or PDF reports
+        routed to product teams.
+      </p>
+
+      <div class="figure reveal">
+        <div class="frame parallax">
+          <div class="viz-title">Bronze · Silver · Gold + governance gate</div>
+          <div class="viz-shell">
+            <svg
+              viewBox="0 0 820 320"
+              role="img"
+              aria-label="Isometric medallion architecture diagram"
+            >
+              <defs>
+                <linearGradient id="bronzeGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#5E462D"></stop>
+                  <stop offset="100%" stop-color="#2B1C10"></stop>
+                </linearGradient>
+                <linearGradient id="silverGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#8F98A6"></stop>
+                  <stop offset="100%" stop-color="#424853"></stop>
+                </linearGradient>
+                <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#C8A95B"></stop>
+                  <stop offset="100%" stop-color="#6C5620"></stop>
+                </linearGradient>
+              </defs>
+              <rect
+                x="0"
+                y="0"
+                width="820"
+                height="320"
+                fill="transparent"
+              ></rect>
+              <g
+                font-family="JetBrains Mono, monospace"
+                font-size="11"
+                letter-spacing="2"
+                fill="#A1A1A6"
+              >
+                <text x="56" y="54">RAW EVENTS</text>
+                <text x="310" y="54">NORMALIZED SNAPSHOTS</text>
+                <text x="570" y="54">RISK REGISTRY</text>
+              </g>
+              <g>
+                <ellipse
+                  cx="132"
+                  cy="100"
+                  rx="72"
+                  ry="22"
+                  fill="#6F5533"
+                ></ellipse>
+                <rect
+                  x="60"
+                  y="100"
+                  width="144"
+                  height="114"
+                  fill="url(#bronzeGrad)"
+                ></rect>
+                <ellipse
+                  cx="132"
+                  cy="214"
+                  rx="72"
+                  ry="22"
+                  fill="#2B1C10"
+                ></ellipse>
+                <ellipse
+                  cx="406"
+                  cy="100"
+                  rx="72"
+                  ry="22"
+                  fill="#A9B0BC"
+                ></ellipse>
+                <rect
+                  x="334"
+                  y="100"
+                  width="144"
+                  height="114"
+                  fill="url(#silverGrad)"
+                ></rect>
+                <ellipse
+                  cx="406"
+                  cy="214"
+                  rx="72"
+                  ry="22"
+                  fill="#424853"
+                ></ellipse>
+                <ellipse
+                  cx="680"
+                  cy="100"
+                  rx="72"
+                  ry="22"
+                  fill="#D1B46A"
+                ></ellipse>
+                <rect
+                  x="608"
+                  y="100"
+                  width="144"
+                  height="114"
+                  fill="url(#goldGrad)"
+                ></rect>
+                <ellipse
+                  cx="680"
+                  cy="214"
+                  rx="72"
+                  ry="22"
+                  fill="#6C5620"
+                ></ellipse>
+              </g>
+              <g stroke="#4D8CFF" stroke-width="2" fill="none">
+                <path d="M206 156 L294 156"></path>
+                <path d="M480 156 L568 156"></path>
+                <path d="M680 236 L680 272 L770 272"></path>
+                <path d="M680 236 L680 294 L544 294"></path>
+              </g>
+              <g fill="#4D8CFF">
+                <polygon points="294,156 282,149 282,163"></polygon>
+                <polygon points="568,156 556,149 556,163"></polygon>
+                <polygon points="770,272 758,265 758,279"></polygon>
+                <polygon points="544,294 556,287 556,301"></polygon>
+              </g>
+              <g
+                font-family="JetBrains Mono, monospace"
+                font-size="10"
+                letter-spacing="1.5"
+                fill="#F5F5F7"
+              >
+                <text x="95" y="161">BRONZE</text>
+                <text x="370" y="161">SILVER</text>
+                <text x="650" y="161">GOLD</text>
+              </g>
+              <g
+                font-family="JetBrains Mono, monospace"
+                font-size="10"
+                letter-spacing="1.5"
+                fill="#A1A1A6"
+              >
+                <text x="718" y="276">HTML / PDF</text>
+                <text x="420" y="298">SLACK ALERTS</text>
+              </g>
+              <rect
+                x="318"
+                y="238"
+                width="176"
+                height="48"
+                fill="none"
+                stroke="#DBA844"
+              ></rect>
+              <text
+                x="334"
+                y="259"
+                font-family="JetBrains Mono, monospace"
+                font-size="10"
+                letter-spacing="1.6"
+                fill="#DBA844"
+              >
+                ROW-LEVEL CONSENT
+              </text>
+              <text
+                x="334"
+                y="274"
+                font-family="JetBrains Mono, monospace"
+                font-size="10"
+                letter-spacing="1.6"
+                fill="#DBA844"
+              >
+                K-ANONYMITY FILTER
+              </text>
+            </svg>
+          </div>
+          <div class="chart-note">
+            Governance is not documentation glued on later. Consent gating and
+            k-anonymity suppression live in pipeline execution paths.
+          </div>
+        </div>
+        <div class="cap">
+          <span class="num">Figure 06</span>Data engineering, statistical
+          validation, and governance controls operate as one system.
+        </div>
+      </div>
+
+      <div class="note-box">
+        <div class="inner">
+          <div class="left">
+            <div class="lab">Governance trigger</div>
+            <div class="big">k &lt; 200</div>
+          </div>
+          <div class="right">
+            <p>
+              Any intersectional cell below 200 users is automatically
+              suppressed to preserve k-anonymity. Persona generation is
+              additionally gated by user-consent flags at the row level. This
+              prevents “helpful” subgroup analytics from becoming a
+              re-identification vector.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="codeblock">
+        <div class="codecap">Python · k-anonymity enforcement</div>
+        <pre><code>def enforce_k_anonymity(df_intersections, k_threshold=200):
+    # Filter out any intersectional group with fewer than 'k' users
+    compliant_df = df_intersections[df_intersections['user_count'] >= k_threshold]
+    
+    # Log suppressed segments for auditing without revealing user data
+    suppressed_count = len(df_intersections) - len(compliant_df)
+    print(f"Governance Alert: Suppressed {suppressed_count} segments failing k-anonymity (k={k_threshold})")
+    
+    return compliant_df</code></pre>
+      </div>
+    </section>
+
+    <section
+      class="band band--paper reveal"
+      data-spine="Verdict"
+      data-section="Conclusion and blind spots"
+    >
+      <div class="eyebrow">Conclusion</div>
+      <h2>
+        Inclusive experimentation becomes measurable only when hidden harm is
+        treated as first-class signal.
+      </h2>
+      <p>
+        Historical use of IMP revealed three recurring blind spots in ordinary
+        A/B practice. First, <b>hidden harm</b>: globally positive experiments
+        that materially damage a small intersectional subgroup. Second,
+        <b>missed opportunity</b>: features that look neutral overall but
+        generate outsized value for a tightly defined overlap of users. Third,
+        <b>invisible impact</b>: model or ranking changes that degrade specific
+        behavior patterns without tripping any platform-wide alarm.
+      </p>
+      <ul class="bullets">
+        <li>
+          Outcome-first discovery protects statistical power by refusing to test
+          every imaginable cohort upfront.
+        </li>
+        <li>
+          Interpretable modeling preserves trust, stakeholder approval, and
+          reproducibility during safety escalation.
+        </li>
+        <li>
+          Proxy-based accessibility monitoring expands equity coverage without
+          invasive assistive-tech fingerprinting.
+        </li>
+        <li>
+          Governance controls belong inside compute pipeline, not in
+          presentation-layer disclaimers.
+        </li>
+      </ul>
+      <p>
+        That is the underlying claim of granular intersectional monitoring: stop
+        optimizing for a fictional average user and build tooling that can
+        quantify who is losing, why they are losing, and whether the
+        organization can responsibly act on that signal.
+      </p>
+    </section>
+
+    <section
+      class="band band--dark back-matter reveal"
+      data-spine="Sources"
+      data-section="Sources and publication posture"
+    >
+      <h3>Sources</h3>
+      <ul class="biblio">
+        <li>
+          <span class="n">[01]</span
+          ><span class="ent"
+            ><i>Granular Intersectional Monitoring_enriched.txt</i> — primary
+            synthesized project source used to structure all prose, tables,
+            formulas, and code excerpts in this HTML artifact.</span
+          >
+        </li>
+        <li>
+          <span class="n">[02]</span
+          ><span class="ent"
+            ><i
+              >portfolio-design-system/ui_kits/case-study/entity-resolution.html</i
+            >
+            — Obsidian-Chrome article shell used as visual and structural
+            styling reference.</span
+          >
+        </li>
+        <li>
+          <span class="n">[03]</span
+          ><span class="ent"
+            ><i>portfolio-design-system/ui_kits/profile/index.html</i> — source
+            of portfolio-level token language, dark-first chrome, and
+            master-grid posture.</span
+          >
+        </li>
+        <li>
+          <span class="n">[04]</span
+          ><span class="ent"
+            ><i>Reference-ready note</i> — source brief did not include external
+            APA bibliography. Add verified public references before publishing
+            this page as an academic portfolio item outside internal
+            review.</span
+          >
+        </li>
+      </ul>
+    </section>
+
+    <footer class="site-foot">
+      <span>Obsidian-Chrome article artifact</span>
+      <span>Granular Intersectional Monitoring</span>
+    </footer>
+
+    <script>
+      const PRETEND_PVALUES = [
+        { name: "new × solo × old-hardware", p: 0.012 },
+        { name: "a11y-proxy × onboarding", p: 0.021 },
+        { name: "latam × undo-heavy", p: 0.045 },
+        { name: "mobile × churn-risk", p: 0.061 },
+        { name: "power-user × team-admin", p: 0.082 },
+        { name: "linux × night-shift", p: 0.094 },
+      ];
+
+      const spine = document.getElementById("spine");
+      const sections = [...document.querySelectorAll("[data-spine]")];
+      sections.forEach((section, i) => {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.innerHTML = `<span class="num">${String(i + 1).padStart(2, "0")}</span><span class="tick"></span><span class="label">${section.dataset.spine}</span>`;
+        row.addEventListener("click", () =>
+          section.scrollIntoView({ behavior: "smooth", block: "start" }),
+        );
+        spine.appendChild(row);
+      });
+      const spineRows = [...spine.querySelectorAll(".row")];
+      const progress = document.getElementById("progress");
+      const topnav = document.getElementById("topnav");
+      const status = document.getElementById("status");
+      const statusSec = status.querySelector(".sec");
+      const statusPct = status.querySelector(".pct");
+      const reveals = [...document.querySelectorAll(".reveal")];
+
+      function onScroll() {
+        const h = document.documentElement;
+        const y = window.scrollY;
+        const max = h.scrollHeight - window.innerHeight;
+        const p = Math.min(1, Math.max(0, y / Math.max(1, max)));
+        progress.style.setProperty("--p", (p * 100).toFixed(2) + "%");
+        statusPct.textContent = Math.round(p * 100) + "%";
+
+        const trigger = window.innerHeight * 0.32;
+        let activeIdx = 0;
+        for (let i = 0; i < sections.length; i++) {
+          const r = sections[i].getBoundingClientRect();
+          if (r.top <= trigger) activeIdx = i;
+        }
+        const active = sections[activeIdx];
+        const paperActive = active.classList.contains("band--paper");
+        statusSec.textContent = active.dataset.section;
+
+        spineRows.forEach((row, i) => {
+          row.classList.toggle("is-active", i === activeIdx);
+          row.classList.toggle(
+            "is-paper-active",
+            i === activeIdx && paperActive,
+          );
+        });
+
+        topnav.classList.toggle("is-paper", paperActive);
+        status.classList.toggle("is-paper", paperActive);
+        spine.classList.toggle("is-paper", paperActive);
+
+        reveals.forEach((el) => {
+          const r = el.getBoundingClientRect();
+          if (r.top < window.innerHeight * 0.92) el.classList.add("is-on");
+        });
+
+        document.querySelectorAll(".parallax").forEach((el) => {
+          const r = el.getBoundingClientRect();
+          const center = r.top + r.height / 2 - window.innerHeight / 2;
+          el.style.transform = `translate3d(0, ${(-center * 0.04).toFixed(1)}px, 0)`;
+        });
+      }
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll);
+      onScroll();
+
+      const globalBtn = document.getElementById("mode-global");
+      const intersectionalBtn = document.getElementById("mode-intersectional");
+      const intersectionLines = document.getElementById("intersectionLines");
+      const impactLegend = document.getElementById("impactLegend");
+      const impactNote = document.getElementById("impactNote");
+      function setImpactMode(mode) {
+        const isIntersectional = mode === "intersectional";
+        globalBtn.classList.toggle("is-on", !isIntersectional);
+        intersectionalBtn.classList.toggle("is-on", isIntersectional);
+        intersectionLines.setAttribute("opacity", isIntersectional ? "1" : "0");
+        impactLegend.innerHTML = isIntersectional
+          ? '<span><span class="sw" style="background:#0F3A6B"></span>global</span><span><span class="sw" style="background:#3866A0"></span>stable majority</span><span><span class="sw" style="background:#1A4A38"></span>mild gain</span><span><span class="sw" style="background:#DBA844"></span>flat-to-decline</span><span><span class="sw" style="background:#7A1626"></span>hidden harm cohort</span>'
+          : '<span><span class="sw" style="background:#0F3A6B"></span>global metric</span>';
+        impactNote.textContent = isIntersectional
+          ? "Intersectional view exposes one subgroup entering clear regression while headline average still rises."
+          : "Global view suggests steady positive lift and no urgent investigation.";
+      }
+      globalBtn.addEventListener("click", () => setImpactMode("global"));
+      intersectionalBtn.addEventListener("click", () =>
+        setImpactMode("intersectional"),
+      );
+
+      const fdrAlpha = document.getElementById("fdrAlpha");
+      const fdrAlphaValue = document.getElementById("fdrAlphaValue");
+      const bhList = document.getElementById("bhList");
+      const bhCutoff = document.getElementById("bhCutoff");
+      const bhSummary = document.getElementById("bhSummary");
+      function renderBH() {
+        const alpha = parseFloat(fdrAlpha.value);
+        fdrAlphaValue.textContent = alpha.toFixed(2);
+        const sorted = [...PRETEND_PVALUES].sort((a, b) => a.p - b.p);
+        const m = sorted.length;
+        let cutoff = 0;
+        let rejectCount = 0;
+        sorted.forEach((item, idx) => {
+          const threshold = ((idx + 1) / m) * alpha;
+          if (item.p <= threshold) {
+            cutoff = item.p;
+            rejectCount = idx + 1;
+          }
+        });
+        bhCutoff.textContent = cutoff ? cutoff.toFixed(3) : "none";
+        bhSummary.textContent = rejectCount
+          ? `${rejectCount} hypotheses survive correction at α = ${alpha.toFixed(2)}.`
+          : `No hypotheses survive correction at α = ${alpha.toFixed(2)}.`;
+        bhList.innerHTML = "";
+        sorted.forEach((item, idx) => {
+          const threshold = ((idx + 1) / m) * alpha;
+          const rejected = item.p <= cutoff && cutoff > 0;
+          const li = document.createElement("li");
+          li.className = `bh-item ${rejected ? "rejected" : "retained"}`;
+          li.innerHTML = `<span class="name">${item.name}</span><span class="pval">p = ${item.p.toFixed(3)} / rank ${idx + 1} cutoff ${threshold.toFixed(3)}</span><span class="state">${rejected ? "Rejected" : "Retained"}</span>`;
+          bhList.appendChild(li);
+        });
+      }
+      fdrAlpha.addEventListener("input", renderBH);
+      renderBH();
+
+      const optInFlag = document.getElementById("optInFlag");
+      const keyboardScore = document.getElementById("keyboardScore");
+      const ariaScore = document.getElementById("ariaScore");
+      const optInValue = document.getElementById("optInValue");
+      const keyboardValue = document.getElementById("keyboardValue");
+      const ariaValue = document.getElementById("ariaValue");
+      const rawProxy = document.getElementById("rawProxy");
+      const proxyProbability = document.getElementById("proxyProbability");
+      const proxyFlag = document.getElementById("proxyFlag");
+      function sigmoid(x) {
+        return 1 / (1 + Math.exp(-x));
+      }
+      function renderProxy() {
+        const opt = parseFloat(optInFlag.value);
+        const key = parseFloat(keyboardScore.value);
+        const aria = parseFloat(ariaScore.value);
+        optInValue.textContent = opt > 0 ? "On" : "Off";
+        keyboardValue.textContent = key.toFixed(1);
+        ariaValue.textContent = aria.toFixed(1);
+        const raw =
+          opt * 4.0 + (key > 0 ? key * 1.5 : 0) + (aria > 0 ? aria * 2.0 : 0);
+        const prob = sigmoid(raw);
+        rawProxy.textContent = raw.toFixed(2);
+        proxyProbability.textContent = prob.toFixed(3);
+        proxyFlag.textContent = prob > 0.6 ? "Flagged" : "Below threshold";
+      }
+      [optInFlag, keyboardScore, ariaScore].forEach((el) =>
+        el.addEventListener("input", renderProxy),
+      );
+      renderProxy();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,27 @@
+# Juggernaut: Large-Scale NLP Content Moderation & Telemetry Architecture
+
+## Introduction
+The challenge of moderating user-generated content (UGC) at scale requires balancing low-latency inference with robust, context-aware telemetry. Modern platforms rely on event-driven microservices to filter text, captions, and emojis. This outline analyzes the implementation of a "Juggernaut" architecture for content moderation.
+
+## 1. High-Level Architecture Pattern
+*   **Ingestion & Processing Layers:** Systems ingest data via message queues and route it through a multi-pass filter. Lightweight classifiers (regex, rule-based) handle obvious spam, while deep analysis paths utilize TF-IDF and transformer models for nuanced toxicity detection (Motia.dev, n.d.).
+*   **Decision Routing:** Content is auto-approved, auto-rejected, or flagged for Human-in-the-Loop (HITL) review based on confidence thresholds (Lettria, n.d.).
+
+## 2. Telemetry and Model Drift
+*   **Observational Data:** Telemetry is critical for detecting model drift. Tracking shifts in sentiment distribution over time identifies emerging toxic trends (Medium, n.d.).
+*   **Performance Metrics:** Systems monitor latency, precision, and false positive rates to ensure the moderation models remain adaptive without compromising user experience.
+
+## 3. Emoji Processing Integration
+*   **The Nuance of Emojis:** Emojis carry intense sentiment and act as markers for sarcasm or irony. Converting emojis to textual descriptions (e.g., using libraries to map '😊' to "happy") allows standard TF-IDF models to treat them as informative tokens (TowardsDataScience, n.d.).
+*   **N-gram Context:** Combining emoji extraction with TF-IDF and bigram/trigram models provides a highly interpretable baseline for identifying specific toxicity signals (Medium, n.d.).
+
+## 4. The Data Pipeline (Juggernaut Specifics)
+*   **Chunking and Parallelization:** Processing large CSV logs of moderation data requires splitting files and using tools like `pandas`, `pyarrow`, and `multiprocessing` to handle memory efficiently.
+*   **Text Preprocessing:** Custom stopword patterns (e.g., "fyp", "foryoupage") specific to platform slang must be stripped, while preserving numeric tokens and emojis using regex (`\p{Emoji}`).
+*   **Co-occurrence & N-Grams:** Generating word co-occurrences (window sizes of 5) and n-grams helps visualize content trends using NetworkX and WordClouds.
+
+## References
+*   Lettria. (n.d.). Content Moderation API. Retrieved from https://lettria.com
+*   Medium. (n.d.). Sentiment Analysis for Content Moderation. Retrieved from medium.com
+*   Motia.dev. (n.d.). Building Scalable Content Moderation Systems. Retrieved from motia.dev
+*   TowardsDataScience. (n.d.). Handling Emojis in NLP. Retrieved from towardsdatascience.com
